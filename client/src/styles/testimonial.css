@@ -1,0 +1,25 @@
+/* Testimonial Section Styles */
+
+/* Custom styles for testimonial pagination bullets */
+.testimonial-pagination .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background-color: #747674; /* Light gold color */
+  opacity: 1;
+  transition: all 0.3s ease;
+  display: inline-block;
+  margin: 0 5px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.testimonial-pagination .swiper-pagination-bullet-active {
+  background-color:  #000000 !important; /* Gold color - important to override hover on active */
+  width: 8px;
+  height: 8px;
+}
+
+/* Updated hover style - black background with no size change */
+.testimonial-pagination .swiper-pagination-bullet:hover {
+  background-color: #000000 !important; /* Black color on hover */
+}

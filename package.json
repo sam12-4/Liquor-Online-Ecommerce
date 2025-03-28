@@ -1,0 +1,19 @@
+{
+  "name": "liquor-online-clone",
+  "version": "1.0.0",
+  "description": "Liquor Online Store with Admin Dashboard",
+  "main": "index.js",
+  "scripts": {
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "npm run dev",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "setup-server": "cd server && npm install",
+    "copy-excel": "copyfiles -f client/public/products.xlsx server/public"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1",
+    "copyfiles": "^2.4.1"
+  }
+} 
