@@ -14,7 +14,8 @@ import {
   ArrowLeftOnRectangleIcon,
   ArchiveBoxIcon,
   DocumentTextIcon,
-  TicketIcon
+  TicketIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -86,6 +87,12 @@ const AdminDashboard = () => {
               icon={<CircleStackIcon className="h-5 w-5" />} 
               label="Inventory" 
               active={activeMenu === 'inventory'} 
+            />
+            <NavItem 
+              to="/admin/dashboard/excel" 
+              icon={<TableCellsIcon className="h-5 w-5" />} 
+              label="Excel Manager" 
+              active={activeMenu === 'excel'} 
             />
             <NavItem 
               to="/admin/dashboard/orders" 

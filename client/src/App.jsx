@@ -35,6 +35,7 @@ const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const DashboardHome = lazy(() => import('./pages/admin/DashboardHome'));
 const ProductsManagement = lazy(() => import('./pages/admin/ProductsManagement'));
+const ExcelManagement = lazy(() => import('./pages/admin/ExcelManagement'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ExcelDemoPage = lazy(() => import('./pages/ExcelDemoPage'));
@@ -141,6 +142,7 @@ function App() {
                     <Route path="/admin/dashboard" element={<AdminDashboard />}>
                       <Route index element={<DashboardHome />} />
                       <Route path="products" element={<ProductsManagement />} />
+                      <Route path="excel" element={<ExcelManagement />} />
                     </Route>
                     
                     <Route path="*" element={<AnimatedNotFoundPage />} />

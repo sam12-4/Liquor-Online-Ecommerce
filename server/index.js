@@ -5,6 +5,7 @@ const path = require('path');
 const XLSX = require('xlsx');
 const { promisify } = require('util');
 const copyFile = promisify(fs.copyFile);
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -13,6 +14,37 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, path.join(__dirname, 'temp'));
+  },
+  filename: function(req, file, cb) {
+    cb(null, 'temp-upload.xlsx');
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: function(req, file, cb) {
+    // Check if file is Excel
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.xlsx' && ext !== '.xls') {
+      return cb(new Error('Only Excel files are allowed'));
+    }
+    cb(null, true);
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max file size
+  } 
+});
+
+// Ensure temp directory exists
+const tempDir = path.join(__dirname, 'temp');
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
 
 // Store path to Excel file
 const EXCEL_FILE_PATH = path.join(__dirname, 'public', 'products.xlsx');
@@ -87,6 +119,69 @@ async function writeProductsToExcel(products) {
     return false;
   }
 }
+
+// Upload and replace products Excel file
+app.post('/api/products/upload', upload.single('excelFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // Create a backup of current file
+    await backupExcelFile();
+    
+    // Replace the current Excel file with the uploaded one
+    const tempFilePath = req.file.path;
+    
+    // Verify the file is a valid Excel file
+    try {
+      // Try to read the file to ensure it's valid
+      const workbook = XLSX.readFile(tempFilePath);
+      const worksheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[worksheetName];
+      const products = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (!Array.isArray(products)) {
+        throw new Error('Invalid Excel format');
+      }
+      
+      console.log(`Uploaded file contains ${products.length} products`);
+    } catch (err) {
+      // Remove temp file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+      
+      return res.status(400).json({ 
+        error: 'Invalid Excel file format',
+        details: err.message
+      });
+    }
+    
+    // Copy the file to replace the products.xlsx
+    fs.copyFileSync(tempFilePath, EXCEL_FILE_PATH);
+    
+    // Clean up the temp file
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+    
+    // Read the new products to confirm
+    const products = readProductsFromExcel();
+    
+    res.json({ 
+      success: true, 
+      message: 'Products file replaced successfully',
+      productCount: products.length
+    });
+  } catch (error) {
+    console.error('Error uploading products file:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload products file',
+      details: error.message
+    });
+  }
+});
 
 // API Routes
 
