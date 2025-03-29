@@ -6,6 +6,24 @@ import { googleLogin } from '../utils/googleAuth';
 // Create context
 const UserAuthContext = createContext();
 
+// Export auth event names
+export const AUTH_EVENTS = {
+  LOGIN: 'login',
+  LOGOUT: 'logout'
+};
+
+// Custom event for auth changes
+export const authEvents = {
+  emit: (eventName, data = {}) => {
+    const event = new CustomEvent(`auth:${eventName}`, { detail: data });
+    window.dispatchEvent(event);
+  },
+  on: (eventName, callback) => {
+    window.addEventListener(`auth:${eventName}`, callback);
+    return () => window.removeEventListener(`auth:${eventName}`, callback);
+  }
+};
+
 // User auth provider component
 export const UserAuthProvider = ({ children }) => {
   const [user, setUser] = useState(getUserInfo());
@@ -23,6 +41,7 @@ export const UserAuthProvider = ({ children }) => {
         if (response.user) {
           setUser(response.user);
           saveUserInfo(response.user);
+          // Don't emit login event here as it would trigger on every page load
         } else {
           setUser(null);
           removeUserInfo();
@@ -57,6 +76,8 @@ export const UserAuthProvider = ({ children }) => {
       if (response.user) {
         setUser(response.user);
         saveUserInfo(response.user);
+        // Emit login event
+        authEvents.emit(AUTH_EVENTS.LOGIN, { user: response.user });
         return true;
       }
       return false;
@@ -81,6 +102,8 @@ export const UserAuthProvider = ({ children }) => {
       if (response.user) {
         setUser(response.user);
         saveUserInfo(response.user);
+        // Emit login event
+        authEvents.emit(AUTH_EVENTS.LOGIN, { user: response.user });
         return true;
       }
       return false;
@@ -114,6 +137,8 @@ export const UserAuthProvider = ({ children }) => {
       await logoutUser();
       setUser(null);
       removeUserInfo();
+      // Emit logout event
+      authEvents.emit(AUTH_EVENTS.LOGOUT);
       navigate('/');
     } catch (err) {
       console.error('Logout error:', err);
@@ -131,6 +156,8 @@ export const UserAuthProvider = ({ children }) => {
       if (response.user) {
         setUser(response.user);
         saveUserInfo(response.user);
+        // Emit login event
+        authEvents.emit(AUTH_EVENTS.LOGIN, { user: response.user });
         return true;
       }
       return false;

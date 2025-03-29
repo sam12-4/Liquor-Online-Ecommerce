@@ -183,7 +183,7 @@ const CartPage = () => {
                 </div>
                 <Link 
                   to="/checkout" 
-                  className="btn btn-primary bg-[#c0a483] w-full mb-3"
+                  className="btn btn-primary bg-[#c0a483] w-full mb-3 hover:bg-black"
                 >
                   Proceed to Checkout
                 </Link>

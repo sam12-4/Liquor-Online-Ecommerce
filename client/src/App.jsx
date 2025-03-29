@@ -122,10 +122,10 @@ function App() {
       <div className="font-sans text-gray-800">
         <ProductProvider>
           <TaxonomyProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <AdminAuthProvider>
-                  <UserAuthProvider>
+            <UserAuthProvider>
+              <AdminAuthProvider>
+                <CartProvider>
+                  <WishlistProvider>
                     <ScrollToTop />
                     <ToastContainer 
                       position="top-right"
@@ -183,10 +183,10 @@ function App() {
                         </Routes>
                       </Layout>
                     </Suspense>
-                  </UserAuthProvider>
-                </AdminAuthProvider>
-              </WishlistProvider>
-            </CartProvider>
+                  </WishlistProvider>
+                </CartProvider>
+              </AdminAuthProvider>
+            </UserAuthProvider>
           </TaxonomyProvider>
         </ProductProvider>
       </div>

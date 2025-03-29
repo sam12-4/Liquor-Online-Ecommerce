@@ -13,6 +13,8 @@ const { Category, Brand, Country, Varietal, Type, Admin } = require('./models');
 const { authenticateAdmin, JWT_SECRET } = require('./middleware/auth');
 const { authenticateUser } = require('./middleware/auth');
 const User = require('./models/User');
+const Cart = require('./models/Cart');
+const Wishlist = require('./models/Wishlist');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
 
 const app = express();
@@ -1695,6 +1697,420 @@ app.post('/api/users/google-login', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error with Google login',
+      error: error.message
+    });
+  }
+});
+
+// Cart API Endpoints
+// Get user's cart
+app.get('/api/cart', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find the cart for this user
+    let cart = await Cart.findOne({ userId });
+
+    // If no cart exists yet, return an empty cart
+    if (!cart) {
+      return res.status(200).json({
+        success: true,
+        cart: { items: [], userId }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching cart',
+      error: error.message
+    });
+  }
+});
+
+// Update cart (replace entire cart)
+app.post('/api/cart', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid cart data. Items should be an array.'
+      });
+    }
+
+    // Find and update cart or create a new one
+    let cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      cart = new Cart({ userId, items });
+    } else {
+      cart.items = items;
+    }
+
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error updating cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating cart',
+      error: error.message
+    });
+  }
+});
+
+// Add item to cart
+app.post('/api/cart/items', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const item = req.body;
+
+    if (!item.productId || !item.name || !item.price || !item.quantity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid item data. Required fields: productId, name, price, quantity.'
+      });
+    }
+
+    // Find cart or create a new one
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      cart = new Cart({ userId, items: [item] });
+    } else {
+      // Check if item already exists
+      const existingItemIndex = cart.items.findIndex(i => i.productId === item.productId);
+      
+      if (existingItemIndex !== -1) {
+        // Update existing item quantity
+        cart.items[existingItemIndex].quantity += item.quantity;
+      } else {
+        // Add new item to cart
+        cart.items.push(item);
+      }
+    }
+
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error adding item to cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding item to cart',
+      error: error.message
+    });
+  }
+});
+
+// Update cart item quantity
+app.put('/api/cart/items/:productId', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { productId } = req.params;
+    const { quantity } = req.body;
+
+    if (!quantity || quantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid quantity. Must be greater than 0.'
+      });
+    }
+
+    // Find the cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found'
+      });
+    }
+
+    // Find the item
+    const itemIndex = cart.items.findIndex(item => item.productId === productId);
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in cart'
+      });
+    }
+
+    // Update the quantity
+    cart.items[itemIndex].quantity = quantity;
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating cart item',
+      error: error.message
+    });
+  }
+});
+
+// Remove item from cart
+app.delete('/api/cart/items/:productId', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { productId } = req.params;
+
+    // Find the cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found'
+      });
+    }
+
+    // Remove the item
+    cart.items = cart.items.filter(item => item.productId !== productId);
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error removing item from cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing item from cart',
+      error: error.message
+    });
+  }
+});
+
+// Clear cart
+app.delete('/api/cart', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find the cart
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(200).json({
+        success: true,
+        message: 'Cart is already empty'
+      });
+    }
+
+    // Clear the items
+    cart.items = [];
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      cart
+    });
+  } catch (error) {
+    console.error('Error clearing cart:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error clearing cart',
+      error: error.message
+    });
+  }
+});
+
+// Wishlist API Endpoints
+// Get user's wishlist
+app.get('/api/wishlist', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find the wishlist for this user
+    let wishlist = await Wishlist.findOne({ userId });
+
+    // If no wishlist exists yet, return an empty wishlist
+    if (!wishlist) {
+      return res.status(200).json({
+        success: true,
+        wishlist: { items: [], userId }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      wishlist
+    });
+  } catch (error) {
+    console.error('Error fetching wishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching wishlist',
+      error: error.message
+    });
+  }
+});
+
+// Update wishlist (replace entire wishlist)
+app.post('/api/wishlist', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid wishlist data. Items should be an array.'
+      });
+    }
+
+    // Find and update wishlist or create a new one
+    let wishlist = await Wishlist.findOne({ userId });
+
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, items });
+    } else {
+      wishlist.items = items;
+    }
+
+    await wishlist.save();
+
+    res.status(200).json({
+      success: true,
+      wishlist
+    });
+  } catch (error) {
+    console.error('Error updating wishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating wishlist',
+      error: error.message
+    });
+  }
+});
+
+// Add item to wishlist
+app.post('/api/wishlist/items', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const item = req.body;
+
+    if (!item.productId || !item.name || !item.price) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid item data. Required fields: productId, name, price.'
+      });
+    }
+
+    // Find wishlist or create a new one
+    let wishlist = await Wishlist.findOne({ userId });
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, items: [item] });
+    } else {
+      // Check if item already exists
+      const existingItemIndex = wishlist.items.findIndex(i => i.productId === item.productId);
+      
+      if (existingItemIndex === -1) {
+        // Only add if not already in wishlist
+        wishlist.items.push(item);
+      } else {
+        // Item already exists, return success without modifying
+        return res.status(200).json({
+          success: true,
+          message: 'Item already in wishlist',
+          wishlist
+        });
+      }
+    }
+
+    await wishlist.save();
+
+    res.status(200).json({
+      success: true,
+      wishlist
+    });
+  } catch (error) {
+    console.error('Error adding item to wishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding item to wishlist',
+      error: error.message
+    });
+  }
+});
+
+// Remove item from wishlist
+app.delete('/api/wishlist/items/:productId', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { productId } = req.params;
+
+    // Find the wishlist
+    const wishlist = await Wishlist.findOne({ userId });
+    if (!wishlist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Wishlist not found'
+      });
+    }
+
+    // Remove the item
+    wishlist.items = wishlist.items.filter(item => item.productId !== productId);
+    await wishlist.save();
+
+    res.status(200).json({
+      success: true,
+      wishlist
+    });
+  } catch (error) {
+    console.error('Error removing item from wishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing item from wishlist',
+      error: error.message
+    });
+  }
+});
+
+// Clear wishlist
+app.delete('/api/wishlist', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find the wishlist
+    const wishlist = await Wishlist.findOne({ userId });
+    if (!wishlist) {
+      return res.status(200).json({
+        success: true,
+        message: 'Wishlist is already empty'
+      });
+    }
+
+    // Clear the items
+    wishlist.items = [];
+    await wishlist.save();
+
+    res.status(200).json({
+      success: true,
+      wishlist
+    });
+  } catch (error) {
+    console.error('Error clearing wishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error clearing wishlist',
       error: error.message
     });
   }
