@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, logoutUser, checkUserAuth, getUserInfo, saveUserInfo, removeUserInfo, registerUser } from '../utils/userAuth';
+import { googleLogin } from '../utils/googleAuth';
 
 // Create context
 const UserAuthContext = createContext();
@@ -121,6 +122,26 @@ export const UserAuthProvider = ({ children }) => {
     }
   };
 
+  // Login with Google
+  const loginWithGoogle = async (tokenResponse) => {
+    try {
+      setLoading(true);
+      clearErrors();
+      const response = await googleLogin(tokenResponse.credential);
+      if (response.user) {
+        setUser(response.user);
+        saveUserInfo(response.user);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      setError(err.message || 'Google authentication failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Context value
   const value = {
     user,
@@ -131,7 +152,8 @@ export const UserAuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    clearErrors
+    clearErrors,
+    loginWithGoogle
   };
 
   return (

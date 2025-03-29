@@ -46,14 +46,14 @@ const WishlistPage = () => {
 
   return (
     <div className="container mx-auto py-10">
-      <AnimatedSection className=''>
+      {/* <AnimatedSection className=''>
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-dark mb-2">My Wishlist</h1>
           <p className="text-gray-600">
             Save your favorite products for later and keep track of special offers.
           </p>
         </div>
-      </AnimatedSection>
+      </AnimatedSection> */}
 
       {wishlistItems.length === 0 ? (
         <AnimatedSection delay={0.2}>

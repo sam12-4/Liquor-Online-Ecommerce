@@ -4,13 +4,14 @@ import { motion } from 'framer-motion';
 import { UserIcon } from '@heroicons/react/24/outline';
 import AnimatedSection from '../components/home/AnimatedSection';
 import { useUserAuth } from '../contexts/UserAuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Import banner image
 import bannerImg from '../assets/images/Slide1.jpg';
 
 const MyAccountPage = () => {
   const navigate = useNavigate();
-  const { login, register, isAuthenticated, loading, error, validationErrors, clearErrors } = useUserAuth();
+  const { login, register, loginWithGoogle, isAuthenticated, loading, error, validationErrors, clearErrors } = useUserAuth();
   
   const [loginForm, setLoginForm] = useState({
     username: '',
@@ -281,6 +282,19 @@ const MyAccountPage = () => {
     }
   };
 
+  // Handle Google login success
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    const success = await loginWithGoogle(credentialResponse);
+    if (success) {
+      navigate('/');
+    }
+  };
+
+  // Handle Google login error
+  const handleGoogleLoginError = () => {
+    setLoginError('Google sign-in failed. Please try again or use email login.');
+  };
+
   return (
     <div>
       {/* Hero Banner */}
@@ -382,6 +396,23 @@ const MyAccountPage = () => {
                 {loading ? 'LOGGING IN...' : 'LOGIN'}
               </button>
             </form>
+            
+            <div className="my-6 relative flex items-center justify-center">
+              <div className="border-t border-gray-300 absolute w-full"></div>
+              <span className="bg-white px-4 relative text-gray-500 text-sm">OR</span>
+            </div>
+            
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={handleGoogleLoginError}
+                useOneTap
+                theme="outline"
+                shape="rectangular"
+                text="signin_with"
+                width="280"
+              />
+            </div>
           </div>
           
           {/* Register Form */}
@@ -485,7 +516,7 @@ const MyAccountPage = () => {
                     className={`w-4 h-4 ${formErrors.register.acceptTerms ? 'border-red-500' : 'text-[#c0a483]'}`}
                   />
                   <span>
-                    I agree to the <a href="#" className="text-[#c0a483] hover:underline">terms and conditions</a> and the <a href="#" className="text-[#c0a483] hover:underline">privacy policy</a>
+                    I agree to the <span className="text-[#c0a483]">terms and conditions</span> and the <span className="text-[#c0a483]">privacy policy</span>
                   </span>
                 </label>
                 {formErrors.register.acceptTerms && (
@@ -501,6 +532,23 @@ const MyAccountPage = () => {
                 {loading ? 'REGISTERING...' : 'REGISTER'}
               </button>
             </form>
+            
+            <div className="my-6 relative flex items-center justify-center">
+              <div className="border-t border-gray-300 absolute w-full"></div>
+              <span className="bg-white px-4 relative text-gray-500 text-sm">OR</span>
+            </div>
+            
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={handleGoogleLoginError}
+                useOneTap
+                theme="outline"
+                shape="rectangular"
+                text="signup_with"
+                width="280"
+              />
+            </div>
           </div>
         </div>
       </div>

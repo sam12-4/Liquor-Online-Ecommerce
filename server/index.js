@@ -1613,6 +1613,93 @@ app.get('/api/users/profile', authenticateUser, (req, res) => {
   }
 });
 
+// Google Login
+app.post('/api/users/google-login', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    // Verify Google token
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client('827334450514-oi8vu33pj2f6v2htus8bgl0n4nrma79r.apps.googleusercontent.com');
+    
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: '827334450514-oi8vu33pj2f6v2htus8bgl0n4nrma79r.apps.googleusercontent.com'
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+    
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      // Create a new user
+      // Generate a random username based on the name
+      const baseUsername = name.toLowerCase().replace(/\s+/g, '');
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+      const username = `${baseUsername}${randomSuffix}`;
+      
+      // Generate a random password
+      const passwordChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+      let password = '';
+      for (let i = 0; i < 16; i++) {
+        password += passwordChars.charAt(Math.floor(Math.random() * passwordChars.length));
+      }
+      
+      user = new User({
+        username,
+        email,
+        password,
+        googleId
+      });
+      
+      await user.save();
+    } else if (!user.googleId) {
+      // Update existing user with Google ID
+      user.googleId = googleId;
+      await user.save();
+    }
+    
+    // Create JWT token
+    const jwtToken = jwt.sign(
+      { id: user._id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    // Set cookie with token
+    res.cookie('userToken', jwtToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    // Remove password from response
+    const userResponse = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt
+    };
+    
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error with Google login',
+      error: error.message
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

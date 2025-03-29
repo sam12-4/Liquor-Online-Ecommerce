@@ -517,7 +517,7 @@ const NavBar = () => {
             <Link to="/wishlist" className="hidden md:block text-dark p-2 hover:hover:text-[#c0a483] focus:outline-none relative">
               <HeartIcon className="h-6 w-6" />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#c0a483] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
@@ -527,7 +527,7 @@ const NavBar = () => {
             <button onClick={toggleCart} className="text-dark p-2 hover:hover:text-[#c0a483] focus:outline-none relative">
               <ShoppingCartIcon className="h-6 w-6" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#c0a483] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}

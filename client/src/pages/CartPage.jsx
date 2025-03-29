@@ -115,11 +115,11 @@ const CartPage = () => {
                       />
                     </div>
                     <div className="flex-1 mr-4">
-                      <Link to={`/product/${item.id}`} className="font-medium text-dark hover:text-primary">
+                      <Link to={`/product/${item.id}`} className="font-medium text-dark hover:text-[#c0a483]">
                         {item.name}
                       </Link>
                       <p className="text-sm text-gray-500">{item.category}</p>
-                      <div className="mt-1 font-bold text-primary">
+                      <div className="mt-1 font-bold text-[#c0a483]">
                         ${(item.salePrice || item.price).toFixed(2)}
                       </div>
                     </div>
@@ -183,13 +183,13 @@ const CartPage = () => {
                 </div>
                 <Link 
                   to="/checkout" 
-                  className="btn btn-primary w-full mb-3"
+                  className="btn btn-primary bg-[#c0a483] w-full mb-3"
                 >
                   Proceed to Checkout
                 </Link>
                 <Link 
                   to="/products" 
-                  className="text-primary text-sm font-medium hover:underline flex justify-center items-center"
+                  className="text-[#c0a483] text-sm font-medium hover:underline flex justify-center items-center"
                 >
                   Continue Shopping
                 </Link>

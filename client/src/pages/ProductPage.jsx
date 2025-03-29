@@ -4,13 +4,13 @@ import { HeartIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
+import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/product/ProductCard';
 
 const ProductPage = () => {
   const { id: productSlug } = useParams();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -18,6 +18,7 @@ const ProductPage = () => {
 
   const { addToCart } = useCart();
   const { products } = useProducts();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,7 +79,13 @@ const ProductPage = () => {
   };
 
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+    if (product) {
+      if (isInWishlist(product.id)) {
+        removeFromWishlist(product.id);
+      } else {
+        addToWishlist(product);
+      }
+    }
   };
 
   const handleAddToCart = () => {
@@ -109,7 +116,7 @@ const ProductPage = () => {
         <div className="text-6xl mb-6">🔍</div>
         <h2 className="text-3xl font-bold mb-4">Product Not Found</h2>
         <p className="text-gray-600 mb-8">The product you are looking for does not exist or has been removed.</p>
-        <Link to="/shop" className="bg-primary text-white py-2 px-6 hover:bg-primary/90">
+        <Link to="/shop" className="bg-[#c0a483] text-white py-2 px-6 hover:bg-black">
           Continue Shopping
         </Link>
       </div>
@@ -235,7 +242,7 @@ const ProductPage = () => {
                 onClick={toggleFavorite}
                 className="w-10 h-10 flex items-center justify-center border border-gray-300 hover:border-[#c0a483] hover:text-[#c0a483]  transition-colors"
               >
-                {isFavorite ? (
+                {product && isInWishlist(product.id) ? (
                   <HeartIconSolid className="h-5 w-5 text-[#c0a483]" />
                 ) : (
                   <HeartIcon className="h-5 w-5" />
