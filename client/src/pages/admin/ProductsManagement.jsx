@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useProducts } from '../../context/ProductContext';
 import NewProductForm from '../../components/admin/NewProductForm';
+import { deleteProduct } from '../../data/productLoader';
 
 const ProductsManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,8 @@ const ProductsManagement = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'ascending' });
   const [showNewProductForm, setShowNewProductForm] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   
   // Use the ProductContext to get products
   const { products, refreshProducts } = useProducts();
@@ -107,27 +110,88 @@ const ProductsManagement = () => {
     currentPage * itemsPerPage
   );
   
-  // Mock handlers for CRUD operations
+  // CRUD operation handlers
   const handleEdit = (productId) => {
-    alert(`Edit product ${productId} - This would navigate to an edit form in a real application`);
+    // Find the product to edit - use a more robust comparison
+    const productToEdit = products.find(p => {
+      // Convert all possible ID variations to strings for comparison
+      const productIdStr = String(productId).trim();
+      const pIdStr = p.id ? String(p.id).trim() : '';
+      const pIDStr = p.ID ? String(p.ID).trim() : '';
+      
+      console.log(`Comparing product ID ${productIdStr} with ${pIdStr} or ${pIDStr}`);
+      
+      return pIdStr === productIdStr || pIDStr === productIdStr;
+    });
+    
+    if (productToEdit) {
+      console.log('Editing product:', productToEdit);
+      setSelectedProduct(productToEdit);
+      setIsEditing(true);
+    } else {
+      alert(`Product with ID ${productId} not found. Please check the console for debug info.`);
+      console.error('All products:', products);
+      console.error('Product ID being searched:', productId, typeof productId);
+    }
   };
   
   const handleDelete = async (productId) => {
     if (window.confirm(`Are you sure you want to delete product ${productId}?`)) {
-      // Here you would call an API to delete the product
-      alert(`Delete product ${productId} - This would call an API in a real application`);
-      // Refresh products after deletion
-      await refreshProducts();
+      try {
+        setLoading(true);
+        // Call the API to delete the product
+        const success = await deleteProduct(productId);
+        
+        if (success) {
+          // Show success message
+          const successMessage = document.createElement('div');
+          successMessage.classList.add('fixed', 'top-4', 'right-4', 'bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700', 'p-4', 'rounded', 'shadow-md', 'z-50');
+          successMessage.innerHTML = '<div class="flex"><div class="flex-shrink-0"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><div class="ml-3"><p class="text-sm">Product deleted successfully!</p></div></div>';
+          document.body.appendChild(successMessage);
+          
+          // Remove the success message after 3 seconds
+          setTimeout(() => {
+            if (document.body.contains(successMessage)) {
+              document.body.removeChild(successMessage);
+            }
+          }, 3000);
+          
+          // Refresh products list
+          await refreshProducts(true);
+        } else {
+          alert('Failed to delete product');
+        }
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert(`Error deleting product: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
     }
   };
   
   const handleAddNew = () => {
+    // Reset any selected product
+    setSelectedProduct(null);
     setShowNewProductForm(true);
   };
   
   const handleProductAdded = () => {
     // No need to manually reload products - the NewProductForm component 
     // will refresh the products in the context after adding a product
+  };
+  
+  const handleProductEdited = async () => {
+    // Refresh products after edit
+    await refreshProducts(true);
+    setIsEditing(false);
+    setSelectedProduct(null);
+  };
+  
+  // Close edit form
+  const handleCloseEditForm = () => {
+    setIsEditing(false);
+    setSelectedProduct(null);
   };
   
   // Render sort indicator
@@ -170,10 +234,19 @@ const ProductsManagement = () => {
   
   return (
     <div className="space-y-6">
-      {showNewProductForm && (
+      {showNewProductForm && !isEditing && (
         <NewProductForm 
           onClose={() => setShowNewProductForm(false)} 
           onProductAdded={handleProductAdded} 
+        />
+      )}
+      
+      {isEditing && selectedProduct && (
+        <NewProductForm 
+          onClose={handleCloseEditForm} 
+          onProductAdded={handleProductEdited} 
+          product={selectedProduct}
+          isEditing={true}
         />
       )}
     

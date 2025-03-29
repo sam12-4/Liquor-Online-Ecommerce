@@ -4,7 +4,8 @@ import { uploadToCloudinary, testCloudinaryConnection } from '../../utils/cloudi
 import { 
   addProductToExcel, 
   getProducts, 
-  getExcelFieldStructure 
+  getExcelFieldStructure,
+  updateProduct
 } from '../../data/productLoader';
 import { useProducts } from '../../context/ProductContext';
 
@@ -81,54 +82,54 @@ const SELECT_OPTIONS = {
   ]
 };
 
-const NewProductForm = ({ onClose, onProductAdded }) => {
+const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = false }) => {
   // Access the product context for global updates
   const { refreshProducts } = useProducts();
   
   // Initial form data structure with common fields
   const [formData, setFormData] = useState({
-    name: '',
-    post_title: '',
-    category: '',
-    type: '',
-    price: '',
-    regular_price: '',
-    sale_price: '',
-    cost_price: '',
-    stock: '',
-    stock_status: 'instock',
-    backorders: 'no',
-    tax_status: 'taxable',
-    stock_quantity: '',
-    sold_individually: 'no',
-    weight: '',
-    description: '',
-    short_description: '',
-    post_excerpt: '',
-    brand: '',
-    country: '',
-    region: '',
-    varietal: '',
-    alcohol: '',
-    size: '',
+    name: product?.name || product?.post_title || '',
+    post_title: product?.post_title || product?.name || '',
+    category: product?.category || product?.['tax:product_cat'] || '',
+    type: product?.type || product?.['tax:product_type'] || product?.['tax:type'] || '',
+    price: product?.price || product?.regular_price || '',
+    regular_price: product?.regular_price || product?.price || '',
+    sale_price: product?.sale_price || '',
+    cost_price: product?.cost_price || '',
+    stock: product?.stock || product?.stock_quantity || '',
+    stock_status: product?.stock_status || 'instock',
+    backorders: product?.backorders || 'no',
+    tax_status: product?.tax_status || 'taxable',
+    stock_quantity: product?.stock_quantity || product?.stock || '',
+    sold_individually: product?.sold_individually || 'no',
+    weight: product?.weight || '',
+    description: product?.description || '',
+    short_description: product?.short_description || product?.post_excerpt || '',
+    post_excerpt: product?.post_excerpt || product?.short_description || '',
+    brand: product?.brand || product?.['tax:product_brand'] || '',
+    country: product?.country || product?.['tax:Country'] || '',
+    region: product?.region || '',
+    varietal: product?.varietal || product?.['tax:wine_varietal'] || '',
+    alcohol: product?.alcohol || '',
+    size: product?.size || product?.['attribute:pa_product-volume'] || '',
     unit: 'ml',
-    isHot: false,
-    isLimitedEdition: false,
-    isRecommended: false,
-    isSpecial: false,
-    isTrending: false,
-    post_status: 'publish',
-    comment_status: 'open',
-    'tax:product_cat': '',
-    'tax:product_brand': '',
-    'tax:product_type': '',
-    'tax:Country': '',
-    'tax:wine_varietal': '',
-    'attribute:pa_color': '',
-    'attribute:pa_product-volume': '',
-    purchase_note: '',
+    isHot: product?.isHot === true || product?.isHot === 'true',
+    isLimitedEdition: product?.isLimitedEdition === true || product?.isLimitedEdition === 'true',
+    isRecommended: product?.isRecommended === true || product?.isRecommended === 'true',
+    isSpecial: product?.isSpecial === true || product?.isSpecial === 'true',
+    isTrending: product?.isTrending === true || product?.isTrending === 'true',
+    post_status: product?.post_status || 'publish',
+    comment_status: product?.comment_status || 'open',
+    'tax:product_cat': product?.['tax:product_cat'] || product?.category || '',
+    'tax:product_brand': product?.['tax:product_brand'] || product?.brand || '',
+    'tax:product_type': product?.['tax:product_type'] || product?.type || '',
+    'tax:Country': product?.['tax:Country'] || product?.country || '',
+    'tax:wine_varietal': product?.['tax:wine_varietal'] || product?.varietal || '',
+    'attribute:pa_color': product?.['attribute:pa_color'] || '',
+    'attribute:pa_product-volume': product?.['attribute:pa_product-volume'] || product?.size || '',
+    purchase_note: product?.purchase_note || '',
     image: null,
-    imagePreview: null
+    imagePreview: product?.image || product?.image_url || product?.images || null
   });
   
   const [isUploading, setIsUploading] = useState(false);
@@ -372,23 +373,29 @@ const NewProductForm = ({ onClose, onProductAdded }) => {
       setIsUploading(true);
       setError(null);
 
-      if (!formData.image) {
+      // For new products, require an image
+      if (!isEditing && !formData.image) {
         setError('Please select a product image');
         setIsUploading(false);
         return;
       }
 
-      // Upload image to Cloudinary
-      console.log('Uploading product image to Cloudinary...');
-      const imageUrl = await uploadToCloudinary(formData.image);
-      console.log('Image uploaded successfully:', imageUrl);
+      // Prepare product data
+      let productData = { ...formData };
       
-      // Prepare product data - include all fields from the form
-      const productData = {
-        ...formData,
-        image: imageUrl,
-        image_url: imageUrl
-      };
+      // Only upload a new image if one was selected
+      if (formData.image) {
+        console.log('Uploading product image to Cloudinary...');
+        const imageUrl = await uploadToCloudinary(formData.image);
+        console.log('Image uploaded successfully:', imageUrl);
+        
+        productData.image = imageUrl;
+        productData.image_url = imageUrl;
+      } else if (isEditing) {
+        // Keep the existing image URL for editing if no new image was uploaded
+        productData.image = product.image || product.image_url || product.images;
+        productData.image_url = product.image || product.image_url || product.images;
+      }
       
       // Remove imagePreview as it's not needed for the Excel
       delete productData.imagePreview;
@@ -422,51 +429,91 @@ const NewProductForm = ({ onClose, onProductAdded }) => {
         }
       });
 
-      // Add product to Excel - this will trigger a file download
-      console.log('Adding product to Excel with data:', filteredProductData);
-      const success = await addProductToExcel(filteredProductData);
+      let success = false;
       
-      if (success) {
-        console.log('Product added successfully, now refreshing products list...');
+      if (isEditing) {
+        // Update existing product
+        console.log(`Updating product ${product.id || product.ID} with data:`, filteredProductData);
+        success = await updateProduct(product.id || product.ID, filteredProductData);
         
-        // Add a small delay before refreshing to ensure the API has completed its operation
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Explicitly refresh products from ProductContext with force refresh parameter
-        // to ensure it refreshes even if other refreshes have happened recently
-        const refreshed = await refreshProducts(true);
-        console.log('Products refreshed:', refreshed);
-        
-        // Show success message in the form
-        const successMessage = document.createElement('div');
-        successMessage.classList.add('fixed', 'top-4', 'right-4', 'bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700', 'p-4', 'rounded', 'shadow-md', 'z-50');
-        successMessage.innerHTML = '<div class="flex"><div class="flex-shrink-0"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><div class="ml-3"><p class="text-sm">Product added successfully!</p></div></div>';
-        document.body.appendChild(successMessage);
-        
-        // Remove the success message after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(successMessage)) {
-            document.body.removeChild(successMessage);
-          }
-        }, 3000);
-        
-        // The alert is already shown in addProductToExcel
-        if (onProductAdded) {
-          onProductAdded();
+        if (success) {
+          console.log('Product updated successfully');
+          
+          // Show success message
+          const successMessage = document.createElement('div');
+          successMessage.classList.add('fixed', 'top-4', 'right-4', 'bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700', 'p-4', 'rounded', 'shadow-md', 'z-50');
+          successMessage.innerHTML = '<div class="flex"><div class="flex-shrink-0"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><div class="ml-3"><p class="text-sm">Product updated successfully!</p></div></div>';
+          document.body.appendChild(successMessage);
+          
+          // Remove the success message after 3 seconds
+          setTimeout(() => {
+            if (document.body.contains(successMessage)) {
+              document.body.removeChild(successMessage);
+            }
+          }, 3000);
+          
+          // Refresh products
+          await refreshProducts(true);
+          
+          // Close form after a delay
+          setTimeout(() => {
+            if (onProductAdded) {
+              onProductAdded();
+            }
+            if (onClose) {
+              onClose();
+            }
+          }, 1000);
         }
-        
-        // Longer delay before closing the form to ensure refresh has fully propagated
-        setTimeout(() => {
-          if (onClose) {
-            onClose();
-          }
-        }, 1000);
       } else {
-        setError('Failed to add product to database');
+        // Add new product
+        console.log('Adding product to Excel with data:', filteredProductData);
+        success = await addProductToExcel(filteredProductData);
+        
+        if (success) {
+          console.log('Product added successfully, now refreshing products list...');
+          
+          // Add a small delay before refreshing to ensure the API has completed its operation
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Explicitly refresh products from ProductContext with force refresh parameter
+          // to ensure it refreshes even if other refreshes have happened recently
+          const refreshed = await refreshProducts(true);
+          console.log('Products refreshed:', refreshed);
+          
+          // Show success message
+          const successMessage = document.createElement('div');
+          successMessage.classList.add('fixed', 'top-4', 'right-4', 'bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700', 'p-4', 'rounded', 'shadow-md', 'z-50');
+          successMessage.innerHTML = '<div class="flex"><div class="flex-shrink-0"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><div class="ml-3"><p class="text-sm">Product added successfully!</p></div></div>';
+          document.body.appendChild(successMessage);
+          
+          // Remove the success message after 3 seconds
+          setTimeout(() => {
+            if (document.body.contains(successMessage)) {
+              document.body.removeChild(successMessage);
+            }
+          }, 3000);
+          
+          // The alert is already shown in addProductToExcel
+          if (onProductAdded) {
+            onProductAdded();
+          }
+          
+          // Longer delay before closing the form to ensure refresh has fully propagated
+          setTimeout(() => {
+            if (onClose) {
+              onClose();
+            }
+          }, 1000);
+        }
+      }
+      
+      if (!success) {
+        setError(isEditing ? 'Failed to update product' : 'Failed to add product to database');
       }
     } catch (err) {
-      console.error('Error adding product:', err);
-      setError(`Error adding product: ${err.message}`);
+      console.error(`Error ${isEditing ? 'updating' : 'adding'} product:`, err);
+      setError(`Error ${isEditing ? 'updating' : 'adding'} product: ${err.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -697,227 +744,233 @@ const NewProductForm = ({ onClose, onProductAdded }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center border-b p-4">
-          <h2 className="text-xl font-semibold text-gray-800">Add New Product</h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="p-10 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading product form...</p>
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {isEditing ? `Edit Product: ${product.name || product.post_title}` : 'Add New Product'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 text-red-500">
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-8">
+            
+              {/* Error message */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 text-red-500">
+                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+              
+              {/* Form sections */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Image Upload Section */}
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Product Image {!isEditing && <span className="text-red-500">*</span>}
+                  </label>
+                  <div className="flex flex-col space-y-4">
+                    <div 
+                      onClick={() => fileInputRef.current.click()}
+                      className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center w-full h-40 cursor-pointer ${
+                        formData.imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {formData.imagePreview ? (
+                        <img 
+                          src={formData.imagePreview} 
+                          alt="Preview" 
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <>
+                          <ArrowUpTrayIcon className="h-8 w-8 text-gray-400" />
+                          <span className="mt-2 text-sm text-gray-500">
+                            {isEditing ? 'Upload new image (optional)' : 'Upload image'}
+                          </span>
+                        </>
+                      )}
+                      <input 
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={testCloudinaryUpload}
+                        disabled={isUploading || !formData.image || isTestingConnection}
+                        className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded hover:bg-blue-100 disabled:opacity-50"
+                      >
+                        {isUploading ? 'Testing upload...' : 'Test Cloudinary Upload'}
+                      </button>
+                      <a 
+                        href="https://cloudinary.com/console/settings/upload" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm bg-gray-50 text-gray-600 px-3 py-1 rounded hover:bg-gray-100"
+                      >
+                        Cloudinary Settings
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Basic Information */}
+                <div className="col-span-2">
+                  <h3 className="text-lg font-medium mb-4">Basic Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Core product fields */}
+                    {renderField('name')}
+                    {renderField('regular_price')}
+                    {renderField('sale_price')}
+                    {renderField('stock')}
+                    {renderField('stock_status')}
+                    {renderField('category')}
+                    {renderField('type')}
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Image Upload Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Image <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-4">
-                <div 
-                  onClick={() => fileInputRef.current.click()}
-                  className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center w-40 h-40 cursor-pointer ${
-                    formData.imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-gray-400'
-                  }`}
+              
+              {/* Product Details */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-4">Product Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Product details fields */}
+                  {renderField('brand')}
+                  {renderField('country')}
+                  {renderField('region')}
+                  {renderField('varietal')}
+                  {renderField('alcohol')}
+                  
+                  {/* Size and Unit */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">
+                        Size <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="size"
+                        name="size"
+                        value={formData.size || ''}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 750"
+                        required
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit
+                      </label>
+                      <select
+                        id="unit"
+                        name="unit"
+                        value={formData.unit || 'ml'}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="ml">ml</option>
+                        <option value="L">L</option>
+                        <option value="oz">oz</option>
+                        <option value="cl">cl</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Other fields */}
+                  {renderField('cost_price')}
+                  {renderField('backorders')}
+                  {renderField('sold_individually')}
+                  {renderField('tax_status')}
+                </div>
+              </div>
+              
+              {/* Product Flags */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-4">Product Flags</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {renderBooleanField('isHot')}
+                  {renderBooleanField('isLimitedEdition')}
+                  {renderBooleanField('isRecommended')}
+                  {renderBooleanField('isSpecial')}
+                  {renderBooleanField('isTrending')}
+                </div>
+              </div>
+              
+              {/* Description */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-4">Descriptions</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {renderField('short_description')}
+                  {renderField('description')}
+                  {renderField('purchase_note')}
+                </div>
+              </div>
+              
+              {/* Advanced Settings */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-4">Advanced Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {renderField('post_status')}
+                  {renderField('comment_status')}
+                </div>
+              </div>
+              
+              {/* Submit button */}
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  {formData.imagePreview ? (
-                    <img 
-                      src={formData.imagePreview} 
-                      alt="Preview" 
-                      className="max-h-full max-w-full object-contain"
-                    />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
                   ) : (
-                    <>
-                      <ArrowUpTrayIcon className="h-8 w-8 text-gray-400" />
-                      <span className="mt-2 text-sm text-gray-500">Upload image</span>
-                    </>
+                    isEditing ? 'Update Product' : 'Add Product'
                   )}
-                  <input 
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500 mb-2">
-                    Select a product image to upload. The image will be uploaded to Cloudinary.
-                  </p>
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={testCloudinaryUpload}
-                      disabled={isUploading || !formData.image || isTestingConnection}
-                      className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded hover:bg-blue-100 disabled:opacity-50"
-                    >
-                      {isUploading ? 'Testing upload...' : 'Test Cloudinary Upload'}
-                    </button>
-                    <a 
-                      href="https://cloudinary.com/console/settings/upload" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm bg-gray-50 text-gray-600 px-3 py-1 rounded hover:bg-gray-100"
-                    >
-                      Cloudinary Settings
-                    </a>
-                  </div>
-                  <p className="text-xs text-amber-600 mt-2">
-                    NOTE: You must create an upload preset named "liquor_online_preset" in your Cloudinary dashboard.
-                  </p>
-                </div>
+                </button>
               </div>
-            </div>
-
-            {/* Basic Information Section */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-medium mb-4">Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Core product fields */}
-                {renderField('name')}
-                {renderField('regular_price')}
-                {renderField('sale_price')}
-                {renderField('stock')}
-                {renderField('stock_status')}
-                {renderField('category')}
-                {renderField('type')}
-              </div>
-            </div>
-
-            {/* Product Details Section */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-medium mb-4">Product Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Product details fields */}
-                {renderField('brand')}
-                {renderField('country')}
-                {renderField('region')}
-                {renderField('varietal')}
-                {renderField('alcohol')}
-                
-                {/* Size and Unit */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">
-                      Size <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="size"
-                      name="size"
-                      value={formData.size || ''}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 750"
-                      required
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
-                      Unit
-                    </label>
-                    <select
-                      id="unit"
-                      name="unit"
-                      value={formData.unit || 'ml'}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="ml">ml</option>
-                      <option value="L">L</option>
-                      <option value="oz">oz</option>
-                      <option value="cl">cl</option>
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Attributes */}
-                {['attribute:pa_color', 'attribute:pa_product-volume', 'attribute:pa_product-count'].map(field => 
-                  excelFields.includes(field) && renderField(field)
-                )}
-                
-                {/* Cost price */}
-                {renderField('cost_price')}
-                
-                {/* Backorders, Sold individually */}
-                {renderField('backorders')}
-                {renderField('sold_individually')}
-                {renderField('tax_status')}
-              </div>
-            </div>
-            
-            {/* Product Flags Section */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-medium mb-4">Product Flags</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {renderBooleanField('isHot')}
-                {renderBooleanField('isLimitedEdition')}
-                {renderBooleanField('isRecommended')}
-                {renderBooleanField('isSpecial')}
-                {renderBooleanField('isTrending')}
-              </div>
-            </div>
-            
-            {/* Description Section */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-medium mb-4">Descriptions</h3>
-              <div className="grid grid-cols-1 gap-4">
-                {renderField('short_description')}
-                {renderField('description')}
-                {renderField('purchase_note')}
-              </div>
-            </div>
-            
-            {/* Advanced Settings */}
-            <div className="border-t pt-4">
-              <h3 className="text-lg font-medium mb-4">Advanced Settings</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {renderField('post_status')}
-                {renderField('comment_status')}
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isUploading}
-                className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isUploading ? 'Adding Product...' : 'Add Product'}
-              </button>
-            </div>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

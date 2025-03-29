@@ -127,7 +127,10 @@ export const updateProduct = async (productId, productData) => {
   try {
     console.log(`Updating product ${productId} via server API`);
     
-    const response = await fetch(`${API_URL}/products/${productId}`, {
+    // Ensure productId is a string
+    const idStr = String(productId);
+    
+    const response = await fetch(`${API_URL}/products/${idStr}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -162,7 +165,10 @@ export const deleteProduct = async (productId) => {
   try {
     console.log(`Deleting product ${productId} via server API`);
     
-    const response = await fetch(`${API_URL}/products/${productId}`, {
+    // Ensure productId is a string
+    const idStr = String(productId);
+    
+    const response = await fetch(`${API_URL}/products/${idStr}`, {
       method: 'DELETE'
     });
     

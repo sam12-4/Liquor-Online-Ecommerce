@@ -161,16 +161,34 @@ app.put('/api/products/:id', async (req, res) => {
   try {
     const productId = req.params.id;
     const productData = req.body;
+    console.log(`Server: Updating product with ID ${productId}, type: ${typeof productId}`);
     
     // Get current products
     const products = readProductsFromExcel();
+    console.log(`Server: Found ${products.length} total products in Excel`);
     
-    // Find the product index
-    const index = products.findIndex(p => (p.id === productId || p.ID === productId));
+    // Find the product index - handle different ID formats
+    const index = products.findIndex(p => {
+      // Convert to string and trim for comparison
+      const pIdStr = p.id ? String(p.id).trim() : '';
+      const pIDStr = p.ID ? String(p.ID).trim() : '';
+      const prodIdStr = String(productId).trim();
+      
+      console.log(`Server: Comparing ID '${prodIdStr}' with '${pIdStr}' or '${pIDStr}'`);
+      return pIdStr === prodIdStr || pIDStr === prodIdStr;
+    });
     
     if (index === -1) {
+      console.log(`Server: Product with ID ${productId} not found in Excel`);
+      
+      // Debug: Log first few product IDs
+      const idSamples = products.slice(0, 5).map(p => ({ id: p.id, ID: p.ID, type: typeof p.id }));
+      console.log('Server: Sample product IDs:', idSamples);
+      
       return res.status(404).json({ error: 'Product not found' });
     }
+    
+    console.log(`Server: Found product at index ${index}:`, products[index]);
     
     // Update product
     const updatedProduct = {
@@ -179,7 +197,12 @@ app.put('/api/products/:id', async (req, res) => {
       date_modified: new Date().toISOString()
     };
     
+    // Ensure ID fields remain the same type as they were
+    updatedProduct.id = products[index].id;
+    updatedProduct.ID = products[index].ID;
+    
     products[index] = updatedProduct;
+    console.log(`Server: Updated product:`, updatedProduct);
     
     // Write to Excel file
     const success = await writeProductsToExcel(products);
@@ -203,16 +226,38 @@ app.put('/api/products/:id', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const productId = req.params.id;
+    console.log(`Server: Deleting product with ID ${productId}, type: ${typeof productId}`);
     
     // Get current products
     const products = readProductsFromExcel();
+    console.log(`Server: Found ${products.length} total products in Excel`);
     
-    // Filter out the product
-    const filteredProducts = products.filter(p => p.id !== productId && p.ID !== productId);
+    // More robust comparison for filtering
+    const originalLength = products.length;
+    const filteredProducts = products.filter(p => {
+      // Convert to string and trim for comparison
+      const pIdStr = p.id ? String(p.id).trim() : '';
+      const pIDStr = p.ID ? String(p.ID).trim() : '';
+      const prodIdStr = String(productId).trim();
+      
+      const shouldKeep = pIdStr !== prodIdStr && pIDStr !== prodIdStr;
+      if (!shouldKeep) {
+        console.log(`Server: Found product to delete:`, p);
+      }
+      return shouldKeep;
+    });
     
-    if (filteredProducts.length === products.length) {
+    if (filteredProducts.length === originalLength) {
+      console.log(`Server: Product with ID ${productId} not found for deletion`);
+      
+      // Debug: Log first few product IDs
+      const idSamples = products.slice(0, 5).map(p => ({ id: p.id, ID: p.ID, type: typeof p.id }));
+      console.log('Server: Sample product IDs:', idSamples);
+      
       return res.status(404).json({ error: 'Product not found' });
     }
+    
+    console.log(`Server: Removed ${originalLength - filteredProducts.length} products`);
     
     // Write to Excel file
     const success = await writeProductsToExcel(filteredProducts);
