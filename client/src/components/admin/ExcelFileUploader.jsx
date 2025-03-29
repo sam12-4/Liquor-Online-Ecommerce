@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpTrayIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -7,6 +7,7 @@ function ExcelFileUploader() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [validationErrors, setValidationErrors] = useState(null);
   const [success, setSuccess] = useState(false);
   const [productCount, setProductCount] = useState(0);
 
@@ -24,6 +25,7 @@ function ExcelFileUploader() {
 
     setFile(selectedFile);
     setError(null);
+    setValidationErrors(null);
     setSuccess(false);
   };
 
@@ -35,6 +37,7 @@ function ExcelFileUploader() {
 
     setLoading(true);
     setError(null);
+    setValidationErrors(null);
     setSuccess(false);
 
     try {
@@ -49,16 +52,39 @@ function ExcelFileUploader() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to upload file');
+        // Check if this is a validation error with details
+        if (result.details) {
+          if (result.details.missingFields) {
+            // Handle missing fields error
+            setValidationErrors({
+              type: 'missingFields',
+              message: result.details.message,
+              fields: result.details.missingFields
+            });
+          } else if (result.details.invalidProducts) {
+            // Handle invalid products error
+            setValidationErrors({
+              type: 'invalidProducts',
+              message: result.details.message,
+              products: result.details.invalidProducts
+            });
+          } else {
+            // Generic error with details
+            throw new Error(result.details.message || result.error);
+          }
+        } else {
+          // Generic error without details
+          throw new Error(result.error || 'Failed to upload file');
+        }
+      } else {
+        setSuccess(true);
+        setProductCount(result.productCount || 0);
+        setFile(null);
+        
+        // Reset file input
+        const fileInput = document.getElementById('excel-file-input');
+        if (fileInput) fileInput.value = '';
       }
-
-      setSuccess(true);
-      setProductCount(result.productCount || 0);
-      setFile(null);
-      
-      // Reset file input
-      const fileInput = document.getElementById('excel-file-input');
-      if (fileInput) fileInput.value = '';
     } catch (err) {
       console.error('Error uploading Excel file:', err);
       setError(err.message || 'Failed to upload Excel file');
@@ -96,6 +122,46 @@ function ExcelFileUploader() {
       {error && (
         <div className="mb-4 p-2 bg-red-50 border border-red-200 text-red-600 rounded-md">
           {error}
+        </div>
+      )}
+
+      {validationErrors && (
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md">
+          <div className="flex items-center mb-2">
+            <ExclamationCircleIcon className="h-5 w-5 mr-2 text-amber-600" />
+            <h3 className="font-semibold">Validation Failed</h3>
+          </div>
+          
+          <p className="mb-2">{validationErrors.message}</p>
+          
+          {validationErrors.type === 'missingFields' && validationErrors.fields && (
+            <div className="mt-2">
+              <h4 className="font-medium text-sm mb-1">Missing Fields:</h4>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                {validationErrors.fields.map((field, index) => (
+                  <li key={index}>{field}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {validationErrors.type === 'invalidProducts' && validationErrors.products && (
+            <div className="mt-2">
+              <h4 className="font-medium text-sm mb-1">Products with Issues:</h4>
+              <div className="max-h-60 overflow-y-auto border border-amber-200 rounded-md mt-2">
+                {validationErrors.products.map((productIssue, index) => (
+                  <div key={index} className="p-3 border-b border-amber-200 last:border-b-0 text-sm">
+                    <p className="font-medium">{productIssue.product} (Row {productIssue.row})</p>
+                    <ul className="list-disc pl-5 mt-1 text-xs text-amber-700">
+                      {productIssue.issues.map((issue, i) => (
+                        <li key={i}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -138,6 +204,8 @@ function ExcelFileUploader() {
         <ul className="list-disc pl-5 mt-1">
           <li>This will completely replace the current product database</li>
           <li>Make sure your Excel file follows the correct format</li>
+          <li>All required fields must be filled for each product</li>
+          <li>Required fields: name, price, stock, category, size, image</li>
           <li>A backup of the current file will be created automatically</li>
         </ul>
       </div>

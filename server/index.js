@@ -139,13 +139,144 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
       const workbook = XLSX.readFile(tempFilePath);
       const worksheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[worksheetName];
-      const products = XLSX.utils.sheet_to_json(worksheet);
+      const uploadedProducts = XLSX.utils.sheet_to_json(worksheet);
       
-      if (!Array.isArray(products)) {
+      if (!Array.isArray(uploadedProducts)) {
         throw new Error('Invalid Excel format');
       }
       
-      console.log(`Uploaded file contains ${products.length} products`);
+      console.log(`Uploaded file contains ${uploadedProducts.length} products`);
+      
+      // Get current products to compare fields
+      let currentProducts = [];
+      if (fs.existsSync(EXCEL_FILE_PATH)) {
+        const currentWorkbook = XLSX.readFile(EXCEL_FILE_PATH);
+        const currentWorksheetName = currentWorkbook.SheetNames[0];
+        const currentWorksheet = currentWorkbook.Sheets[currentWorksheetName];
+        currentProducts = XLSX.utils.sheet_to_json(currentWorksheet);
+      }
+      
+      // Define required fields
+      const requiredFields = [
+        'name', 'post_title', // Name (either field is acceptable)
+        'regular_price', 'price', // Price (either field is acceptable)
+        'stock', 'stock_quantity', // Stock (either field is acceptable)
+        'category', 'tax:product_cat', // Category (either field is acceptable)
+        'size', 'attribute:pa_product-volume' // Size (either field is acceptable)
+      ];
+      
+      // Get all field names from current products
+      const currentFieldNames = new Set();
+      if (currentProducts.length > 0) {
+        currentProducts.forEach(product => {
+          Object.keys(product).forEach(field => {
+            currentFieldNames.add(field);
+          });
+        });
+      }
+      
+      // Check if uploaded file has all fields from current file
+      const uploadedFieldNames = new Set();
+      uploadedProducts.forEach(product => {
+        Object.keys(product).forEach(field => {
+          uploadedFieldNames.add(field);
+        });
+      });
+      
+      const missingFields = [];
+      currentFieldNames.forEach(field => {
+        if (!uploadedFieldNames.has(field)) {
+          missingFields.push(field);
+        }
+      });
+      
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          error: 'Uploaded Excel file is missing fields that exist in the current file',
+          details: {
+            missingFields,
+            message: `These fields exist in the current Excel file but are missing in the uploaded file: ${missingFields.join(', ')}`
+          }
+        });
+      }
+      
+      // Validate all products have required fields
+      const invalidProducts = [];
+      uploadedProducts.forEach((product, index) => {
+        const issues = [];
+        
+        // Check name
+        if ((!product.name || !product.name.trim()) && (!product.post_title || !product.post_title.trim())) {
+          issues.push('Name is required (missing name and post_title)');
+        }
+        
+        // Check price
+        if ((!product.regular_price && product.regular_price !== 0) && (!product.price && product.price !== 0)) {
+          issues.push('Price is required (missing regular_price and price)');
+        }
+        
+        // Check stock
+        if ((!product.stock && product.stock !== 0) && (!product.stock_quantity && product.stock_quantity !== 0)) {
+          issues.push('Stock is required (missing stock and stock_quantity)');
+        }
+        
+        // Check category
+        if ((!product.category || !product.category.trim()) && 
+            (!product['tax:product_cat'] || !product['tax:product_cat'].trim())) {
+          issues.push('Category is required (missing category and tax:product_cat)');
+        }
+        
+        // Check size - allow numeric values without "ml", values with lowercase "ml", and values with capital "ML"
+        if ((product.size === undefined || product.size === null || (typeof product.size === 'string' && !product.size.trim())) && 
+            (product['attribute:pa_product-volume'] === undefined || product['attribute:pa_product-volume'] === null || 
+            (typeof product['attribute:pa_product-volume'] === 'string' && !product['attribute:pa_product-volume'].trim()))) {
+          issues.push('Size is required (missing size and attribute:pa_product-volume)');
+        }
+        
+        // Check image
+        if ((!product.image || !product.image.trim()) && 
+            (!product.image_url || !product.image_url.trim()) &&
+            (!product.images || !product.images.trim())) {
+          issues.push('Image is required (missing image, image_url, and images)');
+        }
+        
+        if (issues.length > 0) {
+          const productName = product.name || product.post_title || `Product at row ${index + 2}`; // +2 for Excel row (header + 1-based index)
+          invalidProducts.push({
+            product: productName,
+            row: index + 2, // Excel row number
+            issues
+          });
+        }
+      });
+      
+      if (invalidProducts.length > 0) {
+        return res.status(400).json({
+          error: 'Some products are missing required fields',
+          details: {
+            invalidProducts,
+            message: `${invalidProducts.length} products have missing required fields. Please fix these issues and upload again.`
+          }
+        });
+      }
+      
+      // If all validations pass, proceed with file replacement
+      // Copy the file to replace the products.xlsx
+      fs.copyFileSync(tempFilePath, EXCEL_FILE_PATH);
+      
+      // Clean up the temp file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+      
+      // Read the new products to confirm
+      const products = readProductsFromExcel();
+      
+      res.json({ 
+        success: true, 
+        message: 'Products file replaced successfully',
+        productCount: products.length
+      });
     } catch (err) {
       // Remove temp file
       if (fs.existsSync(tempFilePath)) {
@@ -157,23 +288,6 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
         details: err.message
       });
     }
-    
-    // Copy the file to replace the products.xlsx
-    fs.copyFileSync(tempFilePath, EXCEL_FILE_PATH);
-    
-    // Clean up the temp file
-    if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-    }
-    
-    // Read the new products to confirm
-    const products = readProductsFromExcel();
-    
-    res.json({ 
-      success: true, 
-      message: 'Products file replaced successfully',
-      productCount: products.length
-    });
   } catch (error) {
     console.error('Error uploading products file:', error);
     res.status(500).json({ 
@@ -413,6 +527,26 @@ app.get('/api/products/structure', (req, res) => {
   } catch (error) {
     console.error('Error getting product structure:', error);
     res.status(500).json({ error: 'Failed to get product structure' });
+  }
+});
+
+// Download the current products Excel file
+app.get('/api/products/download', (req, res) => {
+  try {
+    if (!fs.existsSync(EXCEL_FILE_PATH)) {
+      return res.status(404).json({ error: 'Products Excel file not found' });
+    }
+    
+    // Set headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename=products.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    
+    // Create a read stream and pipe it to the response
+    const fileStream = fs.createReadStream(EXCEL_FILE_PATH);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading Excel file:', error);
+    res.status(500).json({ error: 'Failed to download Excel file' });
   }
 });
 

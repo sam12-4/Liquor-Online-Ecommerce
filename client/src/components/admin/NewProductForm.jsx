@@ -400,6 +400,21 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       // Remove imagePreview as it's not needed for the Excel
       delete productData.imagePreview;
       
+      // Format the size and volume fields properly
+      // Store size with "ml" suffix (lowercase)
+      if (productData.size) {
+        // Remove any existing "ml" suffix if present
+        const numericSize = productData.size.toString().replace(/[^0-9.]/g, '');
+        // Add lowercase "ml" suffix
+        productData.size = `${numericSize}ml`;
+      }
+      
+      // Set the attribute:pa_product-volume field to have uppercase "ML"
+      if (productData.size) {
+        const numericSize = productData.size.toString().replace(/[^0-9.]/g, '');
+        productData['attribute:pa_product-volume'] = `${numericSize}ML`;
+      }
+      
       // Filter out fields that aren't in the Excel file
       const filteredProductData = {};
       Object.keys(productData).forEach(key => {
@@ -878,10 +893,11 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
                         name="size"
                         value={formData.size || ''}
                         onChange={handleInputChange}
-                        placeholder="e.g., 750"
+                        placeholder="e.g., 750 (numeric only)"
                         required
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Enter numeric value only (e.g. 750) - "ml" will be added automatically</p>
                     </div>
                     <div>
                       <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
@@ -893,12 +909,14 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
                         value={formData.unit || 'ml'}
                         onChange={handleInputChange}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        disabled
                       >
                         <option value="ml">ml</option>
                         <option value="L">L</option>
                         <option value="oz">oz</option>
                         <option value="cl">cl</option>
                       </select>
+                      <p className="text-xs text-gray-500 mt-1">ML will be added automatically</p>
                     </div>
                   </div>
                   
