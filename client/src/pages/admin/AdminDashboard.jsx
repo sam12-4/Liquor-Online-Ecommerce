@@ -15,7 +15,10 @@ import {
   ArchiveBoxIcon,
   DocumentTextIcon,
   TicketIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  BookmarkIcon,
+  GlobeAltIcon,
+  BeakerIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -77,6 +80,44 @@ const AdminDashboard = () => {
               active={activeMenu === 'products'} 
             />
             <NavItem 
+              to="/admin/dashboard/excel" 
+              icon={<TableCellsIcon className="h-5 w-5" />} 
+              label="Excel Manager" 
+              active={activeMenu === 'excel'} 
+            />
+          </div>
+          
+          <div className="py-4">
+            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">TAXONOMY</p>
+            <NavItem 
+              to="/admin/dashboard/categories" 
+              icon={<TagIcon className="h-5 w-5" />} 
+              label="Categories" 
+              active={activeMenu === 'categories'} 
+            />
+            <NavItem 
+              to="/admin/dashboard/brands" 
+              icon={<BookmarkIcon className="h-5 w-5" />} 
+              label="Brands" 
+              active={activeMenu === 'brands'} 
+            />
+            <NavItem 
+              to="/admin/dashboard/countries" 
+              icon={<GlobeAltIcon className="h-5 w-5" />} 
+              label="Countries" 
+              active={activeMenu === 'countries'} 
+            />
+            <NavItem 
+              to="/admin/dashboard/varietals" 
+              icon={<BeakerIcon className="h-5 w-5" />} 
+              label="Varietals" 
+              active={activeMenu === 'varietals'} 
+            />
+          </div>
+          
+          <div className="py-4">
+            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">INVENTORY</p>
+            <NavItem 
               to="/admin/dashboard/category" 
               icon={<TagIcon className="h-5 w-5" />} 
               label="Category" 
@@ -87,12 +128,6 @@ const AdminDashboard = () => {
               icon={<CircleStackIcon className="h-5 w-5" />} 
               label="Inventory" 
               active={activeMenu === 'inventory'} 
-            />
-            <NavItem 
-              to="/admin/dashboard/excel" 
-              icon={<TableCellsIcon className="h-5 w-5" />} 
-              label="Excel Manager" 
-              active={activeMenu === 'excel'} 
             />
             <NavItem 
               to="/admin/dashboard/orders" 
@@ -106,24 +141,6 @@ const AdminDashboard = () => {
               label="Purchases" 
               active={activeMenu === 'purchases'} 
             />
-            <NavItem 
-              to="/admin/dashboard/attributes" 
-              icon={<ClockIcon className="h-5 w-5" />} 
-              label="Attributes" 
-              active={activeMenu === 'attributes'} 
-            />
-            <NavItem 
-              to="/admin/dashboard/invoices" 
-              icon={<DocumentTextIcon className="h-5 w-5" />} 
-              label="Invoices" 
-              active={activeMenu === 'invoices'} 
-            />
-            <NavItem 
-              to="/admin/dashboard/settings" 
-              icon={<Cog6ToothIcon className="h-5 w-5" />} 
-              label="Settings" 
-              active={activeMenu === 'settings'} 
-            />
           </div>
           
           <div className="py-4">
@@ -135,38 +152,20 @@ const AdminDashboard = () => {
               active={activeMenu === 'profile'} 
             />
             <NavItem 
-              to="/admin/dashboard/roles" 
-              icon={<UsersIcon className="h-5 w-5" />} 
-              label="Roles" 
-              active={activeMenu === 'roles'} 
-            />
-            <NavItem 
               to="/admin/dashboard/customers" 
               icon={<UsersIcon className="h-5 w-5" />} 
               label="Customers" 
               active={activeMenu === 'customers'} 
-            />
-            <NavItem 
-              to="/admin/dashboard/sellers" 
-              icon={<UsersIcon className="h-5 w-5" />} 
-              label="Sellers" 
-              active={activeMenu === 'sellers'} 
             />
           </div>
           
           <div className="py-4">
             <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">OTHER</p>
             <NavItem 
-              to="/admin/dashboard/coupons" 
-              icon={<TicketIcon className="h-5 w-5" />} 
-              label="Coupons" 
-              active={activeMenu === 'coupons'} 
-            />
-            <NavItem 
-              to="/admin/dashboard/reports" 
-              icon={<ArchiveBoxIcon className="h-5 w-5" />} 
-              label="Reports" 
-              active={activeMenu === 'reports'} 
+              to="/admin/dashboard/settings" 
+              icon={<Cog6ToothIcon className="h-5 w-5" />} 
+              label="Settings" 
+              active={activeMenu === 'settings'} 
             />
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ExcelFileUploader from '../../components/admin/ExcelFileUploader';
 import { getProducts } from '../../data/productLoader';
 import { DocumentTextIcon, TableCellsIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { useTaxonomy } from '../../context/TaxonomyContext';
 
 function ExcelManagement() {
   const [products, setProducts] = useState([]);
@@ -9,6 +10,9 @@ function ExcelManagement() {
   const [error, setError] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  
+  // Get taxonomy context for displaying last updated time
+  const { lastUpdated } = useTaxonomy();
 
   const API_URL = 'http://localhost:5000/api';
 
@@ -88,6 +92,17 @@ function ExcelManagement() {
               <span className="font-medium">{products.length}</span> products in database
             </div>
           </div>
+          
+          {lastUpdated && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <div className="text-sm text-green-600">
+                <span className="font-medium">Taxonomy Data:</span> Last updated {lastUpdated.toLocaleString()}
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Taxonomy data is automatically updated when you upload a new Excel file.
+              </p>
+            </div>
+          )}
         </div>
         
         {/* Excel File Uploader Section */}
@@ -110,6 +125,10 @@ function ExcelManagement() {
               <span className="font-medium">Backup is automatic:</span> A backup of the current Excel file is automatically created 
               before replacement, stored in the <code className="px-1 py-0.5 bg-gray-100 rounded">/server/backups</code> folder with a 
               timestamp.
+            </p>
+            <p>
+              <span className="font-medium">Taxonomy is automatic:</span> When you upload a new Excel file, the system automatically
+              extracts taxonomy data (categories, brands, countries, varietals) and updates the database.
             </p>
           </div>
         </div>

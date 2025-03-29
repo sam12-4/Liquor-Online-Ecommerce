@@ -253,5 +253,54 @@ export async function getExcelFieldStructure() {
   }
 }
 
+/**
+ * Extracts taxonomy data (categories, brands, countries, varietals) from the Excel file
+ * @returns {Promise<Object>} - Counts of extracted items
+ */
+export const extractTaxonomyData = async () => {
+  try {
+    console.log('Extracting taxonomy data from Excel file');
+    
+    const response = await fetch(`${API_URL}/extract-taxonomy`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to extract taxonomy data');
+    }
+    
+    const result = await response.json();
+    console.log('Taxonomy extraction result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error('Error extracting taxonomy data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches taxonomy data of a specific type
+ * @param {string} type - Type of taxonomy (categories, brands, countries, varietals)
+ * @returns {Promise<Array>} - Array of taxonomy values
+ */
+export const getTaxonomyData = async (type) => {
+  try {
+    console.log(`Fetching ${type} data`);
+    
+    const response = await fetch(`${API_URL}/taxonomy/${type}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to fetch ${type} data`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error(`Error fetching ${type} data:`, error);
+    return [];
+  }
+};
+
 // Export the original products as the default export
 export default originalProducts; 

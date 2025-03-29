@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ProductProvider } from './context/ProductContext';
+import { TaxonomyProvider } from './context/TaxonomyContext';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -36,6 +37,10 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const DashboardHome = lazy(() => import('./pages/admin/DashboardHome'));
 const ProductsManagement = lazy(() => import('./pages/admin/ProductsManagement'));
 const ExcelManagement = lazy(() => import('./pages/admin/ExcelManagement'));
+const CategoriesPage = lazy(() => import('./pages/admin/CategoriesPage'));
+const BrandsPage = lazy(() => import('./pages/admin/BrandsPage'));
+const CountriesPage = lazy(() => import('./pages/admin/CountriesPage'));
+const VarietalsPage = lazy(() => import('./pages/admin/VarietalsPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ExcelDemoPage = lazy(() => import('./pages/ExcelDemoPage'));
@@ -92,65 +97,71 @@ function App() {
     <Router>
       <div className="font-sans text-gray-800">
         <ProductProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <ScrollToTop />
-              <ToastContainer 
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="light"
-              />
-              <Suspense fallback={<Loader />}>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<AnimatedHomePage />} />
-                    <Route path="/products" element={<AnimatedProductsPage />} />
-                    <Route path="/product/:id" element={<AnimatedProductPage />} />
-                    <Route path="/cart" element={<AnimatedCartPage />} />
-                    <Route path="/checkout" element={<AnimatedCheckoutPage />} />
-                    <Route path="/thank-you" element={<AnimatedThankYouPage />} />
-                    <Route path="/account" element={<AnimatedAccountPage />} />
-                    <Route path="/my-account" element={<AnimatedMyAccountPage />} />
-                    <Route path="/wishlist" element={<AnimatedWishlistPage />} />
-                    <Route path="/about" element={<AnimatedAboutPage />} />
-                    <Route path="/contact" element={<AnimatedContactPage />} />
-                    <Route path="/shop" element={<AnimatedShopPage />} />
-                    <Route path="/login" element={<AnimatedLoginPage />} />
-                    <Route path="/register" element={<AnimatedRegisterPage />} />
-                    <Route path="/admin" element={<AnimatedAdminLoginPage />} />
-                    <Route path="/favorites" element={<AnimatedFavoritesPage />} />
-                    <Route path="/profile" element={<AnimatedProfilePage />} />
-                    <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
-                    <Route path="/search" element={<AnimatedSearchResultsPage />} />
-                    <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
-                    <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
-                    <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
-                    <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
-                    <Route path="/finance" element={<AnimatedFinancePage />} />
-                    <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
-                    <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
-                    <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
-                    
-                    {/* Admin Dashboard Routes */}
-                    <Route path="/admin/dashboard" element={<AdminDashboard />}>
-                      <Route index element={<DashboardHome />} />
-                      <Route path="products" element={<ProductsManagement />} />
-                      <Route path="excel" element={<ExcelManagement />} />
-                    </Route>
-                    
-                    <Route path="*" element={<AnimatedNotFoundPage />} />
-                  </Routes>
-                </Layout>
-              </Suspense>
-            </WishlistProvider>
-          </CartProvider>
+          <TaxonomyProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <ScrollToTop />
+                <ToastContainer 
+                  position="top-right"
+                  autoClose={3000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                  theme="light"
+                />
+                <Suspense fallback={<Loader />}>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<AnimatedHomePage />} />
+                      <Route path="/products" element={<AnimatedProductsPage />} />
+                      <Route path="/product/:id" element={<AnimatedProductPage />} />
+                      <Route path="/cart" element={<AnimatedCartPage />} />
+                      <Route path="/checkout" element={<AnimatedCheckoutPage />} />
+                      <Route path="/thank-you" element={<AnimatedThankYouPage />} />
+                      <Route path="/account" element={<AnimatedAccountPage />} />
+                      <Route path="/my-account" element={<AnimatedMyAccountPage />} />
+                      <Route path="/wishlist" element={<AnimatedWishlistPage />} />
+                      <Route path="/about" element={<AnimatedAboutPage />} />
+                      <Route path="/contact" element={<AnimatedContactPage />} />
+                      <Route path="/shop" element={<AnimatedShopPage />} />
+                      <Route path="/login" element={<AnimatedLoginPage />} />
+                      <Route path="/register" element={<AnimatedRegisterPage />} />
+                      <Route path="/admin" element={<AnimatedAdminLoginPage />} />
+                      <Route path="/favorites" element={<AnimatedFavoritesPage />} />
+                      <Route path="/profile" element={<AnimatedProfilePage />} />
+                      <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
+                      <Route path="/search" element={<AnimatedSearchResultsPage />} />
+                      <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
+                      <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
+                      <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
+                      <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
+                      <Route path="/finance" element={<AnimatedFinancePage />} />
+                      <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
+                      <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
+                      <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
+                      
+                      {/* Admin Dashboard Routes */}
+                      <Route path="/admin/dashboard" element={<AdminDashboard />}>
+                        <Route index element={<DashboardHome />} />
+                        <Route path="products" element={<ProductsManagement />} />
+                        <Route path="excel" element={<ExcelManagement />} />
+                        <Route path="categories" element={<CategoriesPage />} />
+                        <Route path="brands" element={<BrandsPage />} />
+                        <Route path="countries" element={<CountriesPage />} />
+                        <Route path="varietals" element={<VarietalsPage />} />
+                      </Route>
+                      
+                      <Route path="*" element={<AnimatedNotFoundPage />} />
+                    </Routes>
+                  </Layout>
+                </Suspense>
+              </WishlistProvider>
+            </CartProvider>
+          </TaxonomyProvider>
         </ProductProvider>
       </div>
     </Router>

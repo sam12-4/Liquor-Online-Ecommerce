@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowUpTrayIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { useTaxonomy } from '../../context/TaxonomyContext';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -10,6 +11,10 @@ function ExcelFileUploader() {
   const [validationErrors, setValidationErrors] = useState(null);
   const [success, setSuccess] = useState(false);
   const [productCount, setProductCount] = useState(0);
+  const [taxonomyCounts, setTaxonomyCounts] = useState(null);
+  
+  // Get taxonomy context for refreshing after upload
+  const { refreshTaxonomies } = useTaxonomy();
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -39,6 +44,7 @@ function ExcelFileUploader() {
     setError(null);
     setValidationErrors(null);
     setSuccess(false);
+    setTaxonomyCounts(null);
 
     try {
       const formData = new FormData();
@@ -79,6 +85,15 @@ function ExcelFileUploader() {
       } else {
         setSuccess(true);
         setProductCount(result.productCount || 0);
+        
+        // Check if taxonomy was extracted
+        if (result.taxonomyExtracted && result.taxonomyCounts) {
+          setTaxonomyCounts(result.taxonomyCounts);
+          
+          // Refresh taxonomy context to get the latest data
+          await refreshTaxonomies();
+        }
+        
         setFile(null);
         
         // Reset file input
@@ -166,11 +181,33 @@ function ExcelFileUploader() {
       )}
 
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-md flex items-center">
-          <CheckCircleIcon className="h-5 w-5 mr-2" />
-          <span>
-            Excel file uploaded successfully! {productCount} products loaded.
-          </span>
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-md">
+          <div className="flex items-center">
+            <CheckCircleIcon className="h-5 w-5 mr-2" />
+            <span>
+              Excel file uploaded successfully! {productCount} products loaded.
+            </span>
+          </div>
+          
+          {taxonomyCounts && (
+            <div className="mt-3 pt-3 border-t border-green-200">
+              <p className="text-sm font-medium mb-2">Taxonomy data extracted:</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <span className="font-medium">Categories:</span> {taxonomyCounts.categories}
+                </div>
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <span className="font-medium">Brands:</span> {taxonomyCounts.brands}
+                </div>
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <span className="font-medium">Countries:</span> {taxonomyCounts.countries}
+                </div>
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <span className="font-medium">Varietals:</span> {taxonomyCounts.varietals}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

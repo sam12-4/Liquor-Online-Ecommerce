@@ -6,9 +6,19 @@ const XLSX = require('xlsx');
 const { promisify } = require('util');
 const copyFile = promisify(fs.copyFile);
 const multer = require('multer');
+const connectDB = require('./config/db');
+const { Category, Brand, Country, Varietal } = require('./models');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
+connectDB()
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Failed to connect to MongoDB:', err));
+
+// Clean up any duplicates in taxonomy collections on startup
+cleanupTaxonomyDuplicates();
 
 // Middleware
 app.use(cors());
@@ -272,10 +282,70 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
       // Read the new products to confirm
       const products = readProductsFromExcel();
       
+      // After successful file upload and validation, automatically extract taxonomy data
+      let taxonomyCounts = null;
+      try {
+        // Extract taxonomy data from products
+        const { categories, brands, countries, varietals } = extractUniqueValues(products);
+        
+        // Save to taxonomy files
+        const taxonomyDir = path.join(__dirname, 'public', 'taxonomy');
+        if (!fs.existsSync(taxonomyDir)) {
+          fs.mkdirSync(taxonomyDir, { recursive: true });
+        }
+        
+        // Write each taxonomy to its own JSON file
+        fs.writeFileSync(
+          path.join(taxonomyDir, 'categories.json'), 
+          JSON.stringify(categories, null, 2)
+        );
+        
+        fs.writeFileSync(
+          path.join(taxonomyDir, 'brands.json'), 
+          JSON.stringify(brands, null, 2)
+        );
+        
+        fs.writeFileSync(
+          path.join(taxonomyDir, 'countries.json'), 
+          JSON.stringify(countries, null, 2)
+        );
+        
+        fs.writeFileSync(
+          path.join(taxonomyDir, 'varietals.json'), 
+          JSON.stringify(varietals, null, 2)
+        );
+        
+        // Update MongoDB collections
+        try {
+          // Update collections with new values
+          await updateTaxonomyCollection(Category, categories);
+          await updateTaxonomyCollection(Brand, brands);
+          await updateTaxonomyCollection(Country, countries);
+          await updateTaxonomyCollection(Varietal, varietals);
+          
+          console.log('MongoDB taxonomy collections updated after Excel upload');
+          
+          taxonomyCounts = {
+            categories: categories.length,
+            brands: brands.length,
+            countries: countries.length,
+            varietals: varietals.length
+          };
+        } catch (dbError) {
+          console.error('Error updating MongoDB taxonomy collections after upload:', dbError);
+          // Continue even if MongoDB update fails
+        }
+      } catch (taxonomyError) {
+        console.error('Error extracting taxonomy data after upload:', taxonomyError);
+        // Continue even if taxonomy extraction fails
+      }
+      
       res.json({ 
         success: true, 
         message: 'Products file replaced successfully',
-        productCount: products.length
+        productCount: products.length,
+        taxonomyExtracted: taxonomyCounts !== null,
+        taxonomyCounts
       });
     } catch (err) {
       // Remove temp file
@@ -549,6 +619,387 @@ app.get('/api/products/download', (req, res) => {
     res.status(500).json({ error: 'Failed to download Excel file' });
   }
 });
+
+// Function to deduplicate and extract taxonomy data from products
+function extractUniqueValues(products) {
+  // Extract unique values - using only the specific fields used by the add/edit product form
+  const categories = new Set();
+  const brands = new Set();
+  const countries = new Set();
+  const varietals = new Set();
+  
+  // Case-insensitive tracking to prevent duplicates with different capitalization
+  const categoriesLower = new Set();
+  const brandsLower = new Set();
+  const countriesLower = new Set();
+  const varietalsLower = new Set();
+  
+  products.forEach(product => {
+    // Extract only from the primary field that the add/edit form uses
+    if (product.category && product.category.trim()) {
+      const category = product.category.trim();
+      const categoryLower = category.toLowerCase();
+      if (!categoriesLower.has(categoryLower)) {
+        categories.add(category);
+        categoriesLower.add(categoryLower);
+      }
+    }
+    
+    if (product.brand && product.brand.trim()) {
+      const brand = product.brand.trim();
+      const brandLower = brand.toLowerCase();
+      if (!brandsLower.has(brandLower)) {
+        brands.add(brand);
+        brandsLower.add(brandLower);
+      }
+    }
+    
+    if (product.country && product.country.trim()) {
+      const country = product.country.trim();
+      const countryLower = country.toLowerCase();
+      if (!countriesLower.has(countryLower)) {
+        countries.add(country);
+        countriesLower.add(countryLower);
+      }
+    }
+    
+    if (product.varietal && product.varietal.trim()) {
+      const varietal = product.varietal.trim();
+      const varietalLower = varietal.toLowerCase();
+      if (!varietalsLower.has(varietalLower)) {
+        varietals.add(varietal);
+        varietalsLower.add(varietalLower);
+      }
+    }
+  });
+  
+  // Convert to arrays
+  return {
+    categories: Array.from(categories),
+    brands: Array.from(brands),
+    countries: Array.from(countries),
+    varietals: Array.from(varietals)
+  };
+}
+
+// Extract and save unique values for categories, brands, countries, and varietals
+app.get('/api/extract-taxonomy', async (req, res) => {
+  try {
+    // Read products from Excel
+    const products = readProductsFromExcel();
+    
+    if (!products || products.length === 0) {
+      return res.status(404).json({ error: 'No products found in Excel file' });
+    }
+    
+    // Extract unique values
+    const { categories, brands, countries, varietals } = extractUniqueValues(products);
+    
+    // Save to taxonomy files
+    const taxonomyDir = path.join(__dirname, 'public', 'taxonomy');
+    if (!fs.existsSync(taxonomyDir)) {
+      fs.mkdirSync(taxonomyDir, { recursive: true });
+    }
+    
+    // Write each taxonomy to its own JSON file
+    fs.writeFileSync(
+      path.join(taxonomyDir, 'categories.json'), 
+      JSON.stringify(categories, null, 2)
+    );
+    
+    fs.writeFileSync(
+      path.join(taxonomyDir, 'brands.json'), 
+      JSON.stringify(brands, null, 2)
+    );
+    
+    fs.writeFileSync(
+      path.join(taxonomyDir, 'countries.json'), 
+      JSON.stringify(countries, null, 2)
+    );
+    
+    fs.writeFileSync(
+      path.join(taxonomyDir, 'varietals.json'), 
+      JSON.stringify(varietals, null, 2)
+    );
+    
+    // Update MongoDB collections
+    try {
+      // Clear and update categories collection
+      await updateTaxonomyCollection(Category, categories);
+      
+      // Clear and update brands collection
+      await updateTaxonomyCollection(Brand, brands);
+      
+      // Clear and update countries collection
+      await updateTaxonomyCollection(Country, countries);
+      
+      // Clear and update varietals collection
+      await updateTaxonomyCollection(Varietal, varietals);
+      
+      console.log('MongoDB taxonomy collections updated successfully');
+    } catch (dbError) {
+      console.error('Error updating MongoDB taxonomy collections:', dbError);
+      // Continue even if MongoDB update fails
+    }
+    
+    // Return success with counts
+    res.json({
+      success: true,
+      counts: {
+        categories: categories.length,
+        brands: brands.length,
+        countries: countries.length,
+        varietals: varietals.length
+      }
+    });
+  } catch (error) {
+    console.error('Error extracting taxonomy:', error);
+    res.status(500).json({ 
+      error: 'Failed to extract taxonomy data',
+      details: error.message
+    });
+  }
+});
+
+// Helper function to update a taxonomy collection with new values
+async function updateTaxonomyCollection(Model, values) {
+  try {
+    // First, clean up existing duplicates in the database (case-insensitive)
+    const existingItems = await Model.find({}, 'name');
+    
+    // Group items by lowercase name to find duplicates
+    const existingMap = {};
+    existingItems.forEach(item => {
+      const lowerName = item.name.toLowerCase();
+      if (!existingMap[lowerName]) {
+        existingMap[lowerName] = [item._id];
+      } else {
+        existingMap[lowerName].push(item._id);
+      }
+    });
+    
+    // For each group of duplicates, keep only one (the first one)
+    const duplicatePromises = [];
+    Object.keys(existingMap).forEach(lowerName => {
+      if (existingMap[lowerName].length > 1) {
+        // Keep the first one, remove the rest
+        const idsToRemove = existingMap[lowerName].slice(1);
+        const removePromise = Model.deleteMany({ _id: { $in: idsToRemove } });
+        duplicatePromises.push(removePromise);
+      }
+    });
+    
+    // Wait for all duplicate removal operations to complete
+    if (duplicatePromises.length > 0) {
+      await Promise.all(duplicatePromises);
+      console.log(`Removed ${duplicatePromises.length} duplicate entries from ${Model.modelName}`);
+    }
+    
+    // Now get the cleaned-up list of items
+    const cleanedItems = await Model.find({}, 'name');
+    const existingNames = new Set(cleanedItems.map(item => item.name.toLowerCase()));
+    
+    // Filter out values that already exist in the database (case-insensitive)
+    const newValues = values.filter(name => {
+      return !existingNames.has(name.toLowerCase());
+    });
+    
+    // If there are new values to add
+    if (newValues.length > 0) {
+      // Create documents for new values
+      const newDocuments = newValues.map(name => ({ name }));
+      
+      // Insert many (only new values)
+      await Model.insertMany(newDocuments);
+      console.log(`Added ${newValues.length} new items to ${Model.modelName} collection`);
+    } else {
+      console.log(`No new items to add to ${Model.modelName} collection`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error updating ${Model.modelName} collection:`, error);
+    throw error;
+  }
+}
+
+// Get taxonomy data (updated to check MongoDB first, then fall back to JSON files)
+app.get('/api/taxonomy/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    
+    // Validate type parameter
+    const validTypes = ['categories', 'brands', 'countries', 'varietals'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid taxonomy type' });
+    }
+    
+    // Map type to model
+    const modelMap = {
+      'categories': Category,
+      'brands': Brand,
+      'countries': Country,
+      'varietals': Varietal
+    };
+    
+    // Get the model
+    const Model = modelMap[type];
+    
+    let names = [];
+    
+    try {
+      // Try to get data from MongoDB first
+      const items = await Model.find({}).sort('name');
+      names = items.map(item => item.name);
+      
+      if (names.length > 0) {
+        // Return the unique, deduplicated names
+        const uniqueNames = removeDuplicates(names);
+        return res.json(uniqueNames);
+      }
+    } catch (dbError) {
+      console.error(`Error fetching ${type} from MongoDB:`, dbError);
+      // Fall back to file system if MongoDB fails
+    }
+    
+    // Fall back to JSON file if MongoDB is empty or fails
+    const filePath = path.join(__dirname, 'public', 'taxonomy', `${type}.json`);
+    
+    // If file doesn't exist yet, return empty array
+    if (!fs.existsSync(filePath)) {
+      return res.json([]);
+    }
+    
+    // Read taxonomy data from file
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    
+    // Deduplicate data before returning
+    const uniqueData = removeDuplicates(data);
+    res.json(uniqueData);
+  } catch (error) {
+    console.error(`Error fetching taxonomy data:`, error);
+    res.status(500).json({ error: 'Failed to fetch taxonomy data' });
+  }
+});
+
+// Helper function to remove duplicates (case-insensitive)
+function removeDuplicates(arr) {
+  const seen = new Map();
+  return arr.filter(item => {
+    if (!item) return false;
+    
+    const itemLower = typeof item === 'string' ? item.toLowerCase() : String(item).toLowerCase();
+    if (seen.has(itemLower)) {
+      return false;
+    }
+    seen.set(itemLower, true);
+    return true;
+  });
+}
+
+// Function to clean up duplicates in all taxonomy collections
+async function cleanupTaxonomyDuplicates() {
+  const collections = [
+    { name: 'categories', model: Category },
+    { name: 'brands', model: Brand },
+    { name: 'countries', model: Country },
+    { name: 'varietals', model: Varietal }
+  ];
+
+  for (const { name, model } of collections) {
+    try {
+      console.log(`Cleaning up duplicates in ${name} collection...`);
+      
+      // First, clean up duplicates
+      await cleanupCollectionDuplicates(model);
+      
+      // Then, sync with JSON files to ensure consistency
+      const jsonPath = path.join(__dirname, 'public', 'taxonomy', `${name}.json`);
+      if (fs.existsSync(jsonPath)) {
+        try {
+          const jsonData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+          
+          // Create a Set of lowercase names from the JSON file for efficient lookup
+          const jsonNamesLower = new Set(jsonData.map(item => 
+            typeof item === 'string' ? item.toLowerCase().trim() : String(item).toLowerCase().trim()
+          ));
+          
+          // Get all items from the database
+          const dbItems = await model.find({});
+          
+          // Find items in DB that aren't in the JSON file (orphaned entries)
+          const orphanedItems = dbItems.filter(item => 
+            !jsonNamesLower.has(item.name.toLowerCase().trim())
+          );
+          
+          if (orphanedItems.length > 0) {
+            const orphanedIds = orphanedItems.map(item => item._id);
+            const result = await model.deleteMany({ _id: { $in: orphanedIds } });
+            console.log(`Removed ${result.deletedCount} orphaned entries from ${model.modelName} collection that were not in ${name}.json`);
+          }
+        } catch (jsonError) {
+          console.error(`Error syncing ${name} collection with JSON file:`, jsonError);
+        }
+      }
+    } catch (error) {
+      console.error(`Error cleaning up ${name} collection:`, error);
+    }
+  }
+}
+
+// Function to clean up duplicates in a single collection
+async function cleanupCollectionDuplicates(Model) {
+  try {
+    // Get all items
+    const allItems = await Model.find({});
+    
+    if (allItems.length === 0) {
+      return; // No items to process
+    }
+    
+    // Group items by their lowercase name
+    const itemsByLowerName = {};
+    
+    allItems.forEach(item => {
+      const lowerName = item.name.toLowerCase().trim();
+      if (!itemsByLowerName[lowerName]) {
+        itemsByLowerName[lowerName] = [];
+      }
+      itemsByLowerName[lowerName].push(item);
+    });
+    
+    // Find duplicates (any items where there are more than one with the same lowercase name)
+    const duplicateGroups = Object.values(itemsByLowerName).filter(group => group.length > 1);
+    
+    // No duplicates found
+    if (duplicateGroups.length === 0) {
+      return;
+    }
+    
+    let totalDuplicatesRemoved = 0;
+    
+    // For each group of duplicates, keep the first one and remove the rest
+    for (const group of duplicateGroups) {
+      // Keep the first item
+      const [keeper, ...duplicates] = group;
+      
+      // Get IDs of duplicates to remove
+      const duplicateIds = duplicates.map(dup => dup._id);
+      
+      // Remove duplicates
+      const result = await Model.deleteMany({ _id: { $in: duplicateIds } });
+      
+      totalDuplicatesRemoved += result.deletedCount;
+    }
+    
+    if (totalDuplicatesRemoved > 0) {
+      console.log(`Removed ${totalDuplicatesRemoved} duplicates from ${Model.modelName} collection`);
+    }
+  } catch (error) {
+    console.error(`Error cleaning up duplicates:`, error);
+    throw error;
+  }
+}
 
 // Start the server
 app.listen(PORT, () => {

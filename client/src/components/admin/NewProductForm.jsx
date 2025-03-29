@@ -8,6 +8,7 @@ import {
   updateProduct
 } from '../../data/productLoader';
 import { useProducts } from '../../context/ProductContext';
+import { useTaxonomy } from '../../context/TaxonomyContext';
 
 // Fields that don't need to be shown in the form (auto-generated)
 const HIDDEN_FIELDS = [
@@ -86,6 +87,9 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   // Access the product context for global updates
   const { refreshProducts } = useProducts();
   
+  // Access taxonomy data from context
+  const { categories: taxonomyCategories, brands: taxonomyBrands, countries: taxonomyCountries, varietals: taxonomyVarietals } = useTaxonomy();
+  
   // Initial form data structure with common fields
   const [formData, setFormData] = useState({
     name: product?.name || product?.post_title || '',
@@ -159,7 +163,7 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           console.log('Cloudinary connection test successful');
         }
         
-        // Load product data for dropdown options
+        // Load products (for type field only)
         const products = await getProducts();
         
         // Get Excel structure to determine available fields
@@ -176,32 +180,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
         const formFields = structure.fields.filter(field => !HIDDEN_FIELDS.includes(field));
         setExcelFields(formFields);
         
-        // Extract unique values for dropdown options
-        const uniqueCategories = [...new Set(products.map(p => 
-          p.category || p['tax:product_cat']
-        ).filter(Boolean))];
-        
-        const uniqueBrands = [...new Set(products.map(p => 
-          p.brand || p['tax:product_brand'] || p.manufacturer
-        ).filter(Boolean))];
-        
+        // Use taxonomyCategories, taxonomyBrands, taxonomyCountries, taxonomyVarietals from context
+        // Extract unique values for types (not in taxonomy context)
         const uniqueTypes = [...new Set(products.map(p => 
           p.type || p['tax:product_type'] || p['tax:type']
         ).filter(Boolean))];
         
-        const uniqueCountries = [...new Set(products.map(p => 
-          p.country || p['tax:Country']
-        ).filter(Boolean))];
-        
-        const uniqueVarietals = [...new Set(products.map(p => 
-          p.varietal || p['tax:wine_varietal']
-        ).filter(Boolean))];
-        
-        setCategories(uniqueCategories);
-        setBrands(uniqueBrands);
+        // Use taxonomy data from context
+        setCategories(taxonomyCategories);
+        setBrands(taxonomyBrands);
         setTypes(uniqueTypes);
-        setCountries(uniqueCountries);
-        setVarietals(uniqueVarietals);
+        setCountries(taxonomyCountries);
+        setVarietals(taxonomyVarietals);
         
         // Update formData with additional fields from Excel
         const newFormData = { ...formData };
@@ -226,7 +216,7 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
     };
     
     initialize();
-  }, []);
+  }, [taxonomyCategories, taxonomyBrands, taxonomyCountries, taxonomyVarietals]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
