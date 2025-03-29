@@ -4,6 +4,7 @@ import { getProducts, deleteProduct } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
 import { TagIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
+import TaxonomyDeleteButton from '../../components/admin/TaxonomyDeleteButton';
 import { useProducts } from '../../context/ProductContext';
 import NewProductForm from '../../components/admin/NewProductForm';
 
@@ -161,17 +162,29 @@ function CategoriesPage() {
             <h2 className="text-lg font-semibold mb-4">All Categories</h2>
             <div className="space-y-1 max-h-[600px] overflow-y-auto">
               {categories.map((category, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`w-full text-left px-3 py-2 rounded-md ${
-                    selectedCategory === category
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  {category}
-                </button>
+                <div key={index} className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSelectedCategory(category)}
+                    className={`flex-grow text-left px-3 py-2 rounded-md ${
+                      selectedCategory === category
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                  <div className="flex items-center space-x-1 px-2">
+                    <TaxonomyDeleteButton 
+                      type="categories" 
+                      name={category} 
+                      onSuccess={() => {
+                        if (selectedCategory === category) {
+                          setSelectedCategory(null);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
             

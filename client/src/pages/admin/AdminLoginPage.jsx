@@ -1,17 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useUserAuth } from '../../contexts/UserAuthContext';
 
 const AdminLoginPage = () => {
+  const navigate = useNavigate();
+  const { login, isAuthenticated, loading, error } = useAdminAuth();
+  const { isAuthenticated: isUserAuthenticated } = useUserAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     rememberMe: false
   });
+  const [loginInProgress, setLoginInProgress] = useState(false);
 
   useEffect(() => {
     document.title = 'Admin Login - Liquor Online';
-  }, []);
+    
+    // Redirect to dashboard if already authenticated as admin
+    if (isAuthenticated) {
+      navigate('/admin/dashboard');
+    }
+    
+    // Redirect to home if authenticated as a regular user
+    if (isUserAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, isUserAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -21,18 +37,23 @@ const AdminLoginPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', formData);
     
-    // Check hardcoded admin credentials
-    if (formData.username === 'admin@example.com' && formData.password === 'admin') {
-      // Successful login - store session info and redirect to admin dashboard
-      sessionStorage.setItem('adminLoggedIn', 'true');
-      window.location.href = '/admin/dashboard';
-    } else {
-      // Failed login
-      alert('Invalid credentials. Please try again.');
+    try {
+      setLoginInProgress(true);
+      const success = await login({
+        username: formData.username,
+        password: formData.password
+      });
+      
+      if (success) {
+        navigate('/admin/dashboard');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+    } finally {
+      setLoginInProgress(false);
     }
   };
 
@@ -73,6 +94,13 @@ const AdminLoginPage = () => {
         <div className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-sm">
           <h2 className="text-2xl font-bold text-dark mb-6 text-center">Administrator Access</h2>
           
+          {/* Display error message if there is one */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+              <p>{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="username" className="block text-gray-700 mb-2">Username or Email</label>
@@ -83,6 +111,7 @@ const AdminLoginPage = () => {
                 value={formData.username}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c0a483] focus:border-transparent"
+                disabled={loginInProgress}
                 required
               />
             </div>
@@ -96,6 +125,7 @@ const AdminLoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c0a483] focus:border-transparent"
+                disabled={loginInProgress}
                 required
               />
             </div>
@@ -109,6 +139,7 @@ const AdminLoginPage = () => {
                   checked={formData.rememberMe}
                   onChange={handleChange}
                   className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  disabled={loginInProgress}
                 />
                 <label htmlFor="rememberMe" className="ml-2 text-gray-700">Remember me</label>
               </div>
@@ -116,14 +147,25 @@ const AdminLoginPage = () => {
             
             <button 
               type="submit"
-              className="w-full bg-black text-white py-3 uppercase font-serif transition-colors hover:bg-[#c0a483]"
+              disabled={loginInProgress || loading}
+              className="w-full bg-black text-white py-3 uppercase font-serif transition-colors hover:bg-[#c0a483] disabled:bg-gray-400"
             >
-              LOGIN
+              {loginInProgress ? 'LOGGING IN...' : 'LOGIN'}
             </button>
           </form>
           
           <div className="mt-6 text-center">
             <Link to="/" className="text-primary hover:text-primary/80">Return to Homepage</Link>
+          </div>
+          
+          {/* Default credentials info for demo purposes */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              <p className="font-medium mb-2">Default Admin Credentials:</p>
+              <p>Username: admin</p>
+              <p>Email: admin@example.com</p>
+              <p>Password: admin</p>
+            </div>
           </div>
         </div>
       </div>

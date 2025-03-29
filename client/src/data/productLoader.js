@@ -335,5 +335,34 @@ export const addTaxonomyItem = async (type, name) => {
   }
 };
 
+/**
+ * Deletes a taxonomy item from the database
+ * @param {string} type - The taxonomy type (categories, brands, countries, varietals, types)
+ * @param {string} name - The name of the taxonomy item to delete
+ * @returns {Promise<Object>} - Result of the deletion
+ */
+export const deleteTaxonomyItem = async (type, name) => {
+  try {
+    console.log(`Deleting ${type.slice(0, -1)}: ${name}`);
+    
+    const response = await fetch(`${API_URL}/taxonomy/${type}/${encodeURIComponent(name)}`, {
+      method: 'DELETE'
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || `Failed to delete ${type.slice(0, -1)}`);
+    }
+    
+    console.log('Deletion result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error deleting ${type.slice(0, -1)}:`, error);
+    throw error;
+  }
+};
+
 // Export the original products as the default export
 export default originalProducts; 

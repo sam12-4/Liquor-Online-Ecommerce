@@ -4,6 +4,7 @@ import { getProducts, deleteProduct } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
 import { TagIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
+import TaxonomyDeleteButton from '../../components/admin/TaxonomyDeleteButton';
 import { useProducts } from '../../context/ProductContext';
 import NewProductForm from '../../components/admin/NewProductForm';
 
@@ -158,17 +159,29 @@ function TypesPage() {
             <h2 className="text-lg font-semibold mb-4">All Types</h2>
             <div className="space-y-1 max-h-[600px] overflow-y-auto">
               {types.map((type, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedType(type)}
-                  className={`w-full text-left px-3 py-2 rounded-md ${
-                    selectedType === type
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  {type}
-                </button>
+                <div key={index} className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSelectedType(type)}
+                    className={`flex-grow text-left px-3 py-2 rounded-md ${
+                      selectedType === type
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                  <div className="flex items-center space-x-1 px-2">
+                    <TaxonomyDeleteButton 
+                      type="types" 
+                      name={type} 
+                      onSuccess={() => {
+                        if (selectedType === type) {
+                          setSelectedType(null);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
             

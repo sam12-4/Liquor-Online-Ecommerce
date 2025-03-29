@@ -331,6 +331,12 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       return false;
     }
     
+    // Validate that size is a number
+    if (formData.size && !/^\d*\.?\d*$/.test(formData.size.toString().replace(/ml|ML/g, ''))) {
+      setError('Product size must be a numeric value');
+      return false;
+    }
+    
     // All validations passed
     return true;
   };
@@ -378,8 +384,16 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       // Format the size and volume fields properly
       // Store size with "ml" suffix (lowercase)
       if (productData.size) {
-        // Remove any existing "ml" suffix if present
+        // Remove any existing "ml" suffix if present and ensure it's numeric
         const numericSize = productData.size.toString().replace(/[^0-9.]/g, '');
+        
+        // Validate the numeric value
+        if (!numericSize || isNaN(parseFloat(numericSize))) {
+          setError('Size must be a valid number');
+          setIsUploading(false);
+          return;
+        }
+        
         // Add lowercase "ml" suffix
         productData.size = `${numericSize}ml`;
       }
@@ -866,9 +880,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
                         id="size"
                         name="size"
                         value={formData.size || ''}
-                        onChange={handleInputChange}
+                        onChange={(e) => {
+                          // Allow only numbers and decimal points
+                          const newValue = e.target.value.replace(/[^0-9.]/g, '');
+                          setFormData(prev => ({
+                            ...prev,
+                            size: newValue,
+                            'attribute:pa_product-volume': newValue ? `${newValue}ML` : ''
+                          }));
+                        }}
                         placeholder="e.g., 750 (numeric only)"
                         required
+                        pattern="[0-9]*\.?[0-9]*"
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       />
                       <p className="text-xs text-gray-500 mt-1">Enter numeric value only (e.g. 750) - "ml" will be added automatically</p>

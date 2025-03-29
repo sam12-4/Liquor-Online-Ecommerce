@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const Admin = require('./Admin');
+const User = require('./User');
 
 // Define schema for Category
 const categorySchema = new mongoose.Schema({
@@ -59,6 +61,8 @@ const Type = mongoose.model('Type', typeSchema);
 
 // Export models
 module.exports = {
+  Admin,
+  User,
   Category,
   Brand, 
   Country,

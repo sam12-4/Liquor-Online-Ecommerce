@@ -3,6 +3,7 @@ import ExcelFileUploader from '../../components/admin/ExcelFileUploader';
 import { getProducts } from '../../data/productLoader';
 import { DocumentTextIcon, TableCellsIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useTaxonomy } from '../../context/TaxonomyContext';
+import { Link } from 'react-router-dom';
 
 function ExcelManagement() {
   const [products, setProducts] = useState([]);
@@ -124,7 +125,9 @@ function ExcelManagement() {
             <p>
               <span className="font-medium">Backup is automatic:</span> A backup of the current Excel file is automatically created 
               before replacement, stored in the <code className="px-1 py-0.5 bg-gray-100 rounded">/server/backups</code> folder with a 
-              timestamp.
+              timestamp. Only the 5 most recent backups are kept to save disk space. You can access and download backups from the 
+              <Link to="/admin/dashboard/backups" className="text-blue-600 hover:text-blue-800 px-1">Backup Files</Link> 
+              page.
             </p>
             <p>
               <span className="font-medium">Taxonomy is automatic:</span> When you upload a new Excel file, the system automatically

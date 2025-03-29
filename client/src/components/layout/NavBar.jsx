@@ -15,6 +15,8 @@ import {
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { getFilters } from '../../data/productLoader';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useUserAuth } from '../../contexts/UserAuthContext';
 
 // Import styles
 import '../../styles/navbar.css';
@@ -29,6 +31,19 @@ const NavBar = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loginFormOpen, setLoginFormOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Check if admin is logged in
+  const { isAuthenticated: isAdminAuthenticated } = useAdminAuth();
+
+  // Check if user is logged in
+  const { 
+    user, 
+    isAuthenticated: isUserAuthenticated, 
+    login: userLogin, 
+    logout: userLogout,
+    error: userAuthError, 
+    loading: userAuthLoading 
+  } = useUserAuth();
 
   // Get cart state from context
   const { cartItems, cartTotal, removeFromCart, updateCartItemQuantity, cartCount } = useCart();
@@ -112,6 +127,50 @@ const NavBar = () => {
 
   // Calculate subtotal - we're now using cartItems directly from context
   const subtotal = cartItems.reduce((acc, item) => acc + ((item.salePrice || item.price) * item.quantity), 0);
+
+  // Form state for user login
+  const [loginForm, setLoginForm] = useState({
+    username: '',
+    password: '',
+    rememberMe: false
+  });
+
+  // Handle login form change
+  const handleLoginFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setLoginForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  // Handle login form submit
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const success = await userLogin({
+        username: loginForm.username,
+        password: loginForm.password
+      });
+      
+      if (success) {
+        setLoginFormOpen(false);
+        setLoginForm({
+          username: '',
+          password: '',
+          rememberMe: false
+        });
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    await userLogout();
+  };
 
   return (
     <header className="bg-white z-50 top-0 shadow-sm ">
@@ -319,71 +378,140 @@ const NavBar = () => {
 
           {/* Search & Icons */}
           <div className="flex items-center space-x-4">
-            {/* Account Icon */}
-            <div className="hidden md:block relative">
-              <button 
-                onClick={toggleLoginForm}
-                className="login-trigger text-dark p-2 hover:text-primary focus:outline-none"
-              >
-                <span className="text-dark font-medium uppercase hover:text-[#c0a483]">Login/Register</span>
-              </button>
-              
-              {/* Login Form Popup */}
-              {loginFormOpen && (
-                <div className="login-form absolute right-0 border-t-2 border-t-[#c0a483] top-full mt-2 w-96 bg-white shadow-lg z-50 border border-gray-200">
-                  <div className="p-6">
-                    <div className="flex justify-between border-b pb-4 mb-4">
-                      <h2 className="text-xl font-serif text-dark">Sign in</h2>
-                      <Link to="/my-account" className="text-[#c0a483] hover:underline hover:text-black font-serif">
-                        Create An Account
-                      </Link>
-                    </div>
-                    
-                    <form className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="block text-gray-600">
-                          Username or email <span className="text-red-500">*</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          placeholder="Your name"
-                          className="w-full p-3 border border-gray-300 focus:border-[#c0a483] focus:outline-none"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="block text-gray-600">
-                          Password <span className="text-red-500">*</span>
-                        </label>
-                        <input 
-                          type="password" 
-                          placeholder="Password"
-                          className="w-full p-3 border border-gray-300 focus:border-[#c0a483] focus:outline-none"
-                        />
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                          <input type="checkbox" className="w-4 h-4 text-[#c0a483]" />
-                          <span className="text-gray-600">Remember me</span>
-                        </label>
-                        
-                        <Link to="/forgot-password" className="text-[#c0a483] hover:underline text-sm">
-                          Lost your password?
+            {/* Account Icon - only show if neither admin nor user is authenticated */}
+            {!isAdminAuthenticated && !isUserAuthenticated && (
+              <div className="hidden md:block relative">
+                <button 
+                  onClick={toggleLoginForm}
+                  className="login-trigger text-dark p-2 hover:text-primary focus:outline-none"
+                >
+                  <span className="text-dark font-medium uppercase hover:text-[#c0a483]">Login/Register</span>
+                </button>
+                
+                {/* Login Form Popup */}
+                {loginFormOpen && (
+                  <div className="login-form absolute right-0 border-t-2 border-t-[#c0a483] top-full mt-2 w-96 bg-white shadow-lg z-50 border border-gray-200">
+                    <div className="p-6">
+                      <div className="flex justify-between border-b pb-4 mb-4">
+                        <h2 className="text-xl font-serif text-dark">Sign in</h2>
+                        <Link to="/my-account" className="text-[#c0a483] hover:underline hover:text-black font-serif">
+                          Create An Account
                         </Link>
                       </div>
                       
-                      <button
-                        type="submit"
-                        className="w-full bg-black text-white py-3 uppercase font-serif transition-colors hover:bg-[#c0a483] "
-                      >
-                        LOGIN
-                      </button>
-                    </form>
+                      {userAuthError && (
+                        <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+                          <p>{userAuthError}</p>
+                        </div>
+                      )}
+                      
+                      <form onSubmit={handleLoginSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="block text-gray-600">
+                            Username or email <span className="text-red-500">*</span>
+                          </label>
+                          <input 
+                            type="text" 
+                            name="username"
+                            value={loginForm.username}
+                            onChange={handleLoginFormChange}
+                            placeholder="Your username or email"
+                            className="w-full p-3 border border-gray-300 focus:border-[#c0a483] focus:outline-none"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-gray-600">
+                            Password <span className="text-red-500">*</span>
+                          </label>
+                          <input 
+                            type="password" 
+                            name="password"
+                            value={loginForm.password}
+                            onChange={handleLoginFormChange}
+                            placeholder="Password"
+                            className="w-full p-3 border border-gray-300 focus:border-[#c0a483] focus:outline-none"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              name="rememberMe"
+                              checked={loginForm.rememberMe}
+                              onChange={handleLoginFormChange}
+                              className="w-4 h-4 text-[#c0a483]" 
+                            />
+                            <span className="text-gray-600">Remember me</span>
+                          </label>
+                          
+                          <Link to="/forgot-password" className="text-[#c0a483] hover:underline text-sm">
+                            Lost your password?
+                          </Link>
+                        </div>
+                        
+                        <button
+                          type="submit"
+                          disabled={userAuthLoading}
+                          className="w-full bg-black text-white py-3 uppercase font-serif transition-colors hover:bg-[#c0a483] disabled:bg-gray-400"
+                        >
+                          {userAuthLoading ? 'LOGGING IN...' : 'LOGIN'}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Admin Dashboard link if admin is logged in */}
+            {isAdminAuthenticated && (
+              <div className="hidden md:block">
+                <Link 
+                  to="/admin/dashboard"
+                  className="text-dark font-medium uppercase hover:text-[#c0a483]"
+                >
+                  Admin Dashboard
+                </Link>
+              </div>
+            )}
+            
+            {/* User account section if user is logged in */}
+            {isUserAuthenticated && !isAdminAuthenticated && (
+              <div className="hidden md:block relative">
+                <div className="flex items-center space-x-2">
+                  <span className="text-dark font-medium">Hello, {user?.username}</span>
+                  <div className="relative group">
+                    <button className="flex items-center space-x-1 text-dark">
+                      <UserIcon className="h-5 w-5" />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </button>
+                    
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg hidden group-hover:block z-50 border border-gray-200">
+                      <div className="py-2">
+                        <Link to="/profile" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                          My Profile
+                        </Link>
+                        <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                          My Orders
+                        </Link>
+                        <button 
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        >
+                          Log Out
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
             {/* Wishlist Icon */}
             <Link to="/wishlist" className="hidden md:block text-dark p-2 hover:hover:text-[#c0a483] focus:outline-none relative">

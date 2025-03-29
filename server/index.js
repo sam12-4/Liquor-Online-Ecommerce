@@ -6,8 +6,14 @@ const XLSX = require('xlsx');
 const { promisify } = require('util');
 const copyFile = promisify(fs.copyFile);
 const multer = require('multer');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 const connectDB = require('./config/db');
-const { Category, Brand, Country, Varietal, Type } = require('./models');
+const { Category, Brand, Country, Varietal, Type, Admin } = require('./models');
+const { authenticateAdmin, JWT_SECRET } = require('./middleware/auth');
+const { authenticateUser } = require('./middleware/auth');
+const User = require('./models/User');
+const { validateRegistration, validateLogin } = require('./middleware/validators');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,9 +27,14 @@ connectDB()
 cleanupTaxonomyDuplicates();
 
 // Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -75,8 +86,31 @@ async function backupExcelFile() {
     
     await copyFile(EXCEL_FILE_PATH, backupPath);
     console.log(`Backup created at: ${backupPath}`);
+    
+    // Delete older backups, keeping only the 5 most recent ones
+    const MAX_BACKUPS = 5;
+    const files = fs.readdirSync(BACKUP_FOLDER)
+      .filter(file => file.startsWith('products-backup-'))
+      .map(file => ({
+        name: file,
+        path: path.join(BACKUP_FOLDER, file),
+        time: fs.statSync(path.join(BACKUP_FOLDER, file)).mtime.getTime()
+      }))
+      .sort((a, b) => b.time - a.time); // Sort newest to oldest
+    
+    // If we have more than MAX_BACKUPS files, delete the oldest ones
+    if (files.length > MAX_BACKUPS) {
+      console.log(`Removing ${files.length - MAX_BACKUPS} old backup files...`);
+      for (let i = MAX_BACKUPS; i < files.length; i++) {
+        fs.unlinkSync(files[i].path);
+        console.log(`Deleted old backup: ${files[i].name}`);
+      }
+    }
+    
+    return backupPath;
   } catch (error) {
     console.error('Error creating backup:', error);
+    return null;
   }
 }
 
@@ -1094,6 +1128,488 @@ app.post('/api/taxonomy/:type', async (req, res) => {
   } catch (error) {
     console.error(`Error adding taxonomy item:`, error);
     res.status(500).json({ error: 'Failed to add taxonomy item', details: error.message });
+  }
+});
+
+// Delete a taxonomy item (only if no products are using it)
+app.delete('/api/taxonomy/:type/:name', async (req, res) => {
+  try {
+    const { type, name } = req.params;
+    
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({ error: 'Name is required and must be a non-empty string' });
+    }
+    
+    // Validate type parameter
+    const validTypes = ['categories', 'brands', 'countries', 'varietals', 'types'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid taxonomy type' });
+    }
+    
+    // Map type to model and product field
+    const modelMap = {
+      'categories': { model: Category, field: 'category', altField: 'tax:product_cat' },
+      'brands': { model: Brand, field: 'brand', altField: 'tax:product_brand' },
+      'countries': { model: Country, field: 'country', altField: 'tax:Country' },
+      'varietals': { model: Varietal, field: 'varietal', altField: 'tax:wine_varietal' },
+      'types': { model: Type, field: 'type', altField: 'tax:product_type' }
+    };
+    
+    // Get model and field info
+    const { model: Model, field, altField } = modelMap[type];
+    
+    // Check if the item exists
+    const existingItem = await Model.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    });
+    
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Taxonomy item not found' });
+    }
+    
+    // Read products from Excel to check if any are using this taxonomy item
+    const products = readProductsFromExcel();
+    
+    // Check if any products are using this taxonomy item (case-insensitive)
+    const itemNameLower = name.toLowerCase().trim();
+    const productsUsingItem = products.filter(product => {
+      const fieldValue = product[field]?.toLowerCase().trim() || '';
+      const altFieldValue = product[altField]?.toLowerCase().trim() || '';
+      return fieldValue === itemNameLower || altFieldValue === itemNameLower;
+    });
+    
+    if (productsUsingItem.length > 0) {
+      return res.status(409).json({ 
+        error: `Cannot delete this ${type.slice(0, -1)} because ${productsUsingItem.length} products are using it`,
+        count: productsUsingItem.length,
+        products: productsUsingItem.map(p => ({ 
+          id: p.id || p.ID, 
+          name: p.name || p.post_title
+        })).slice(0, 5) // Return info about first 5 products using this item
+      });
+    }
+    
+    // Delete the item from the database
+    await Model.deleteOne({ _id: existingItem._id });
+    
+    // Also update the JSON file
+    const filePath = path.join(__dirname, 'public', 'taxonomy', `${type}.json`);
+    if (fs.existsSync(filePath)) {
+      let currentItems = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      
+      // Filter out the item (case-insensitive)
+      currentItems = currentItems.filter(item => 
+        item.toLowerCase().trim() !== itemNameLower
+      );
+      
+      // Write updated array back to file
+      fs.writeFileSync(filePath, JSON.stringify(currentItems, null, 2));
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `Successfully deleted ${type.slice(0, -1)}: ${name}`
+    });
+  } catch (error) {
+    console.error(`Error deleting taxonomy item:`, error);
+    res.status(500).json({ error: 'Failed to delete taxonomy item', details: error.message });
+  }
+});
+
+// Get list of backup files
+app.get('/api/backups', (req, res) => {
+  try {
+    // Check if backup folder exists
+    if (!fs.existsSync(BACKUP_FOLDER)) {
+      return res.json({ backups: [] });
+    }
+    
+    // Get all backup files
+    const files = fs.readdirSync(BACKUP_FOLDER)
+      .filter(file => file.startsWith('products-backup-'))
+      .map(file => {
+        const filePath = path.join(BACKUP_FOLDER, file);
+        const stats = fs.statSync(filePath);
+        
+        return {
+          name: file,
+          path: `/api/backups/download/${file}`,
+          size: stats.size,
+          created: stats.mtime,
+          sizeFormatted: formatFileSize(stats.size)
+        };
+      })
+      .sort((a, b) => b.created - a.created); // Sort newest to oldest
+    
+    res.json({ backups: files });
+  } catch (error) {
+    console.error('Error getting backup files:', error);
+    res.status(500).json({ error: 'Failed to get backup files' });
+  }
+});
+
+// Helper function to format file size
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' bytes';
+  else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  else if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+// Download a specific backup file
+app.get('/api/backups/download/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    
+    // Validate filename to prevent directory traversal attacks
+    if (!filename.match(/^products-backup-[\d-T]+\.xlsx$/)) {
+      return res.status(400).json({ error: 'Invalid backup filename' });
+    }
+    
+    const filePath = path.join(BACKUP_FOLDER, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Backup file not found' });
+    }
+    
+    // Set headers for file download
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    
+    // Create a read stream and pipe it to the response
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading backup file:', error);
+    res.status(500).json({ error: 'Failed to download backup file' });
+  }
+});
+
+// Admin Authentication Routes
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Validate input
+    if (!username || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Username and password are required' 
+      });
+    }
+
+    // Find admin by username or email
+    const admin = await Admin.findOne({
+      $or: [
+        { username: username },
+        { email: username }
+      ]
+    });
+
+    // Check if admin exists
+    if (!admin) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Check if admin is active
+    if (!admin.isActive) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Account is inactive. Please contact support.' 
+      });
+    }
+
+    // Verify password
+    const isMatch = await admin.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Update last login time
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: admin._id, username: admin.username },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Set cookie
+    res.cookie('adminToken', token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production'
+    });
+
+    // Return success
+    res.json({
+      success: true,
+      message: 'Login successful',
+      admin: {
+        id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        lastLogin: admin.lastLogin
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during login' 
+    });
+  }
+});
+
+// Logout route
+app.post('/api/admin/logout', (req, res) => {
+  res.clearCookie('adminToken');
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Check authentication status
+app.get('/api/admin/me', authenticateAdmin, (req, res) => {
+  res.json({ 
+    success: true, 
+    admin: {
+      id: req.admin._id,
+      username: req.admin.username,
+      email: req.admin.email,
+      lastLogin: req.admin.lastLogin
+    }
+  });
+});
+
+// User Authentication Routes
+
+// Register User
+app.post('/api/users/register', validateRegistration, async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ username }, { email }] 
+    });
+    
+    if (existingUser) {
+      const fieldName = existingUser.username === username ? 'username' : 'email';
+      const existingValue = fieldName === 'username' ? username : email;
+      const errorMessage = `This ${fieldName} "${existingValue}" already exists. Please choose another ${fieldName}.`;
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Registration failed - duplicate account information',
+        errors: [
+          { field: fieldName, message: errorMessage }
+        ]
+      });
+    }
+    
+    // Create new user
+    const user = new User({
+      username,
+      email,
+      password
+    });
+    
+    // Save user to database
+    await user.save();
+    
+    // Create JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    // Set cookie with token
+    res.cookie('userToken', token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    // Remove password from response
+    const userResponse = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt
+    };
+    
+    // Send success response
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error registering user',
+      error: error.message
+    });
+  }
+});
+
+// Login User
+app.post('/api/users/login', validateLogin, async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    // Find user by username or email
+    const user = await User.findOne({
+      $or: [
+        { username: username || '' },
+        { email: email || username || '' } // If username is provided but no email, try it as email too
+      ]
+    });
+    
+    // Check if user exists
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication failed',
+        errors: [
+          { field: 'username', message: 'Invalid credentials' }
+        ]
+      });
+    }
+    
+    // Check if password is correct
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication failed',
+        errors: [
+          { field: 'password', message: 'Invalid credentials' }
+        ]
+      });
+    }
+    
+    // Create JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    // Set cookie with token
+    res.cookie('userToken', token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    
+    // Remove password from response
+    const userResponse = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt
+    };
+    
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging in',
+      error: error.message
+    });
+  }
+});
+
+// Logout User
+app.post('/api/users/logout', (req, res) => {
+  try {
+    // Clear cookie
+    res.clearCookie('userToken');
+    
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error logging out',
+      error: error.message
+    });
+  }
+});
+
+// Check User Authentication
+app.get('/api/users/check-auth', authenticateUser, (req, res) => {
+  try {
+    // User is authenticated if middleware passes
+    const userResponse = {
+      _id: req.user._id,
+      username: req.user.username,
+      email: req.user.email,
+      createdAt: req.user.createdAt
+    };
+    
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: 'User is authenticated',
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Check auth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking authentication',
+      error: error.message
+    });
+  }
+});
+
+// Get User Profile
+app.get('/api/users/profile', authenticateUser, (req, res) => {
+  try {
+    // Get user data (excluding password)
+    const userResponse = {
+      _id: req.user._id,
+      username: req.user.username,
+      email: req.user.email,
+      createdAt: req.user.createdAt
+    };
+    
+    // Send success response
+    res.status(200).json({
+      success: true,
+      user: userResponse
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting user profile',
+      error: error.message
+    });
   }
 });
 

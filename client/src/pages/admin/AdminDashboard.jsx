@@ -20,10 +20,12 @@ import {
   GlobeAltIcon,
   BeakerIcon
 } from '@heroicons/react/24/outline';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { admin, isAuthenticated, loading, logout } = useAdminAuth();
   const [activeMenu, setActiveMenu] = useState('dashboard');
 
   useEffect(() => {
@@ -33,24 +35,46 @@ const AdminDashboard = () => {
     const path = location.pathname.split('/').pop();
     setActiveMenu(path || 'dashboard');
     
-    // Check if admin is logged in (in a real app, this would check a token or session)
-    const checkAdminAuth = () => {
-      // For now, we're just simulating authentication
-      // In a real app, you would check for a valid auth token
-      const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
-      if (!isLoggedIn) {
-        navigate('/admin');
-      }
-    };
-    
-    checkAdminAuth();
-  }, [location, navigate]);
+    // Redirect to login page if not authenticated
+    if (!loading && !isAuthenticated) {
+      navigate('/admin');
+    }
+  }, [location, navigate, loading, isAuthenticated]);
 
-  // Mock function to handle logout
-  const handleLogout = () => {
-    sessionStorage.removeItem('adminLoggedIn');
-    navigate('/admin');
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
   };
+
+  // Show loading if authentication is being checked
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-3 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 font-bold text-xl">Access Denied</p>
+          <p className="mt-2 text-gray-600">Please log in to access the admin dashboard.</p>
+          <button 
+            onClick={() => navigate('/admin')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -85,6 +109,12 @@ const AdminDashboard = () => {
               label="Excel Manager" 
               active={activeMenu === 'excel'} 
             />
+            <NavItem 
+              to="/admin/dashboard/backups" 
+              icon={<ArchiveBoxIcon className="h-5 w-5" />} 
+              label="Backup Files" 
+              active={activeMenu === 'backups'} 
+            />
           </div>
           
           <div className="py-4">
@@ -115,7 +145,7 @@ const AdminDashboard = () => {
             />
             <NavItem 
               to="/admin/dashboard/types" 
-              icon={<ArchiveBoxIcon className="h-5 w-5" />} 
+              icon={<TagIcon className="h-5 w-5 text-blue-400" />} 
               label="Types" 
               active={activeMenu === 'types'} 
             />
@@ -193,7 +223,7 @@ const AdminDashboard = () => {
         {/* Top Header */}
         <header className="bg-white shadow-sm z-10">
           <div className="px-6 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-800">Welcome!</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">Welcome, {admin?.username || 'Admin'}!</h1>
             <div className="flex items-center space-x-4">
               <button className="relative text-gray-500 hover:text-gray-700">
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -204,7 +234,7 @@ const AdminDashboard = () => {
                 </svg>
               </button>
               <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
-                A
+                {admin?.username?.charAt(0).toUpperCase() || 'A'}
               </div>
             </div>
           </div>
