@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getProducts } from '../../data/productLoader';
+import { Link, useNavigate } from 'react-router-dom';
+import { getProducts, deleteProduct } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
-import { BookmarkIcon } from '@heroicons/react/24/outline';
+import { BookmarkIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
+import { useProducts } from '../../context/ProductContext';
+import NewProductForm from '../../components/admin/NewProductForm';
 
 function BrandsPage() {
   const [products, setProducts] = useState([]);
@@ -11,6 +13,10 @@ function BrandsPage() {
   const [error, setError] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const { brands } = useTaxonomy();
+  const { refreshProducts } = useProducts();
+  const navigate = useNavigate();
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     document.title = 'Brands - Admin Dashboard';
@@ -45,8 +51,93 @@ function BrandsPage() {
 
   const filteredProducts = selectedBrand ? getProductsByBrand() : [];
 
+  // Function to handle product edit
+  const handleEdit = (productId) => {
+    // Find the product to edit
+    const productToEdit = products.find(p => {
+      // Convert all possible ID variations to strings for comparison
+      const productIdStr = String(productId).trim();
+      const pIdStr = p.id ? String(p.id).trim() : '';
+      const pIDStr = p.ID ? String(p.ID).trim() : '';
+      
+      return pIdStr === productIdStr || pIDStr === productIdStr;
+    });
+    
+    if (productToEdit) {
+      console.log('Editing product:', productToEdit);
+      setSelectedProduct(productToEdit);
+      setIsEditing(true);
+    } else {
+      alert(`Product with ID ${productId} not found.`);
+      console.error('All products:', products);
+      console.error('Product ID being searched:', productId, typeof productId);
+    }
+  };
+  
+  // Close edit form
+  const handleCloseEditForm = () => {
+    setIsEditing(false);
+    setSelectedProduct(null);
+  };
+  
+  // Handle product edited
+  const handleProductEdited = async () => {
+    // Refresh products after edit
+    await refreshProducts(true);
+    loadProducts();
+    setIsEditing(false);
+    setSelectedProduct(null);
+  };
+
+  // Function to handle product delete
+  const handleDelete = async (productId) => {
+    if (window.confirm(`Are you sure you want to delete product ${productId}?`)) {
+      try {
+        setLoading(true);
+        // Call the API to delete the product
+        const success = await deleteProduct(productId);
+        
+        if (success) {
+          // Show success message
+          const successMessage = document.createElement('div');
+          successMessage.classList.add('fixed', 'top-4', 'right-4', 'bg-green-100', 'border-l-4', 'border-green-500', 'text-green-700', 'p-4', 'rounded', 'shadow-md', 'z-50');
+          successMessage.innerHTML = '<div class="flex"><div class="flex-shrink-0"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></div><div class="ml-3"><p class="text-sm">Product deleted successfully!</p></div></div>';
+          document.body.appendChild(successMessage);
+          
+          // Remove the success message after 3 seconds
+          setTimeout(() => {
+            if (document.body.contains(successMessage)) {
+              document.body.removeChild(successMessage);
+            }
+          }, 3000);
+          
+          // Refresh products and reload data
+          await refreshProducts(true);
+          loadProducts();
+        } else {
+          alert('Failed to delete product');
+        }
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert(`Error deleting product: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
+      {/* Product Edit Form */}
+      {isEditing && selectedProduct && (
+        <NewProductForm 
+          onClose={handleCloseEditForm} 
+          onProductAdded={handleProductEdited} 
+          product={selectedProduct}
+          isEditing={true}
+        />
+      )}
+      
       <div className="flex items-center mb-6">
         <BookmarkIcon className="h-6 w-6 text-indigo-500 mr-2" />
         <h1 className="text-2xl font-bold">Brands</h1>
@@ -136,7 +227,7 @@ function BrandsPage() {
                             Size
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Action
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -184,22 +275,20 @@ function BrandsPage() {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <Link
-                                to={`/admin/dashboard/products/edit/${product.id || product.ID}`}
-                                className="text-indigo-600 hover:text-indigo-900 mr-3"
-                              >
-                                Edit
-                              </Link>
-                              <a 
-                                href="#" 
-                                className="text-red-600 hover:text-red-900"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  // Delete functionality would go here
-                                }}
-                              >
-                                Delete
-                              </a>
+                              <div className="flex items-center space-x-3">
+                                <button
+                                  onClick={() => handleEdit(product.id || product.ID)}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                >
+                                  <PencilIcon className="h-5 w-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(product.id || product.ID)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
