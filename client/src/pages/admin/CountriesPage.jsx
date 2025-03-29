@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getProducts } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
 import { GlobeAltIcon } from '@heroicons/react/24/outline';
+import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
 
 function CountriesPage() {
   const [products, setProducts] = useState([]);
@@ -74,7 +75,7 @@ function CountriesPage() {
                   onClick={() => setSelectedCountry(country)}
                   className={`w-full text-left px-3 py-2 rounded-md ${
                     selectedCountry === country
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-blue-100 text-blue-700'
                       : 'hover:bg-gray-100'
                   }`}
                 >
@@ -82,6 +83,16 @@ function CountriesPage() {
                 </button>
               ))}
             </div>
+            
+            {/* Add Country Form */}
+            <TaxonomyAddForm 
+              type="countries" 
+              label="Country" 
+              onSuccess={(newCountry) => {
+                // Select the newly added country after it's added
+                setTimeout(() => setSelectedCountry(newCountry), 300);
+              }}
+            />
           </div>
           
           {/* Products in selected country */}

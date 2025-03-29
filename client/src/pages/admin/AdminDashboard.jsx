@@ -113,6 +113,12 @@ const AdminDashboard = () => {
               label="Varietals" 
               active={activeMenu === 'varietals'} 
             />
+            <NavItem 
+              to="/admin/dashboard/types" 
+              icon={<ArchiveBoxIcon className="h-5 w-5" />} 
+              label="Types" 
+              active={activeMenu === 'types'} 
+            />
           </div>
           
           <div className="py-4">

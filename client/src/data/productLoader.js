@@ -302,5 +302,38 @@ export const getTaxonomyData = async (type) => {
   }
 };
 
+/**
+ * Adds a new taxonomy item to the database
+ * @param {string} type - The taxonomy type (categories, brands, countries, varietals, types)
+ * @param {string} name - The name of the new taxonomy item
+ * @returns {Promise<Object>} - Result of the addition
+ */
+export const addTaxonomyItem = async (type, name) => {
+  try {
+    console.log(`Adding new ${type.slice(0, -1)}: ${name}`);
+    
+    const response = await fetch(`${API_URL}/taxonomy/${type}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to add ${type.slice(0, -1)}`);
+    }
+    
+    const result = await response.json();
+    console.log('Addition result:', result);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error adding ${type.slice(0, -1)}:`, error);
+    throw error;
+  }
+};
+
 // Export the original products as the default export
 export default originalProducts; 

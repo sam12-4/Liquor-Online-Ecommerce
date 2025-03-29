@@ -88,7 +88,7 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   const { refreshProducts } = useProducts();
   
   // Access taxonomy data from context
-  const { categories: taxonomyCategories, brands: taxonomyBrands, countries: taxonomyCountries, varietals: taxonomyVarietals } = useTaxonomy();
+  const { categories, brands, countries, varietals, types } = useTaxonomy();
   
   // Initial form data structure with common fields
   const [formData, setFormData] = useState({
@@ -139,11 +139,6 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [varietals, setVarietals] = useState([]);
   const [excelFields, setExcelFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
@@ -163,9 +158,6 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           console.log('Cloudinary connection test successful');
         }
         
-        // Load products (for type field only)
-        const products = await getProducts();
-        
         // Get Excel structure to determine available fields
         const structure = await getExcelFieldStructure();
         console.log('Excel field structure:', structure);
@@ -179,19 +171,6 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
         // Filter out fields that shouldn't be shown in the form
         const formFields = structure.fields.filter(field => !HIDDEN_FIELDS.includes(field));
         setExcelFields(formFields);
-        
-        // Use taxonomyCategories, taxonomyBrands, taxonomyCountries, taxonomyVarietals from context
-        // Extract unique values for types (not in taxonomy context)
-        const uniqueTypes = [...new Set(products.map(p => 
-          p.type || p['tax:product_type'] || p['tax:type']
-        ).filter(Boolean))];
-        
-        // Use taxonomy data from context
-        setCategories(taxonomyCategories);
-        setBrands(taxonomyBrands);
-        setTypes(uniqueTypes);
-        setCountries(taxonomyCountries);
-        setVarietals(taxonomyVarietals);
         
         // Update formData with additional fields from Excel
         const newFormData = { ...formData };
@@ -216,7 +195,7 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
     };
     
     initialize();
-  }, [taxonomyCategories, taxonomyBrands, taxonomyCountries, taxonomyVarietals]);
+  }, [categories, brands, countries, varietals, types]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -241,6 +220,12 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       setFormData(prev => ({ ...prev, 'tax:product_brand': value }));
     } else if (name === 'tax:product_brand') {
       setFormData(prev => ({ ...prev, brand: value }));
+    } else if (name === 'type') {
+      setFormData(prev => ({ ...prev, 'tax:product_type': value, 'tax:type': value }));
+    } else if (name === 'tax:product_type') {
+      setFormData(prev => ({ ...prev, type: value, 'tax:type': value }));
+    } else if (name === 'tax:type') {
+      setFormData(prev => ({ ...prev, type: value, 'tax:product_type': value }));
     } else if (name === 'stock') {
       setFormData(prev => ({ ...prev, stock_quantity: value }));
     } else if (name === 'stock_quantity') {
@@ -616,19 +601,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       return (
         <div key={field}>
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
-            Category <span className="text-red-500">*</span>
+            Category
           </label>
           <select
             id={field}
             name={field}
             value={formData[field] || ''}
             onChange={handleInputChange}
-            required
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">Select a category</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
+            <option value="">Select Category</option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
             ))}
           </select>
         </div>
@@ -641,18 +625,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
             Brand
           </label>
-          <input
-            type="text"
+          <select
             id={field}
             name={field}
-            list="brand-options"
             value={formData[field] || ''}
             onChange={handleInputChange}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          />
-          <datalist id="brand-options">
-            {brands.map(brand => <option key={brand} value={brand} />)}
-          </datalist>
+          >
+            <option value="">Select Brand</option>
+            {brands.map(brand => (
+              <option key={brand} value={brand}>{brand}</option>
+            ))}
+          </select>
         </div>
       );
     }
@@ -663,18 +647,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
             Type
           </label>
-          <input
-            type="text"
+          <select
             id={field}
             name={field}
-            list="type-options"
             value={formData[field] || ''}
             onChange={handleInputChange}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          />
-          <datalist id="type-options">
-            {types.map(type => <option key={type} value={type} />)}
-          </datalist>
+          >
+            <option value="">Select Type</option>
+            {types.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
         </div>
       );
     }
@@ -685,18 +669,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
             Country
           </label>
-          <input
-            type="text"
+          <select
             id={field}
             name={field}
-            list="country-options"
             value={formData[field] || ''}
             onChange={handleInputChange}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          />
-          <datalist id="country-options">
-            {countries.map(country => <option key={country} value={country} />)}
-          </datalist>
+          >
+            <option value="">Select Country</option>
+            {countries.map(country => (
+              <option key={country} value={country}>{country}</option>
+            ))}
+          </select>
         </div>
       );
     }
@@ -707,18 +691,18 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
             Varietal
           </label>
-          <input
-            type="text"
+          <select
             id={field}
             name={field}
-            list="varietal-options"
             value={formData[field] || ''}
             onChange={handleInputChange}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          />
-          <datalist id="varietal-options">
-            {varietals.map(varietal => <option key={varietal} value={varietal} />)}
-          </datalist>
+          >
+            <option value="">Select Varietal</option>
+            {varietals.map(varietal => (
+              <option key={varietal} value={varietal}>{varietal}</option>
+            ))}
+          </select>
         </div>
       );
     }

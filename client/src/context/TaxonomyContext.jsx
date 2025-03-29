@@ -30,6 +30,7 @@ export const TaxonomyProvider = ({ children }) => {
   const [brands, setBrands] = useState([]);
   const [countries, setCountries] = useState([]);
   const [varietals, setVarietals] = useState([]);
+  const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -45,12 +46,14 @@ export const TaxonomyProvider = ({ children }) => {
         categoriesData,
         brandsData,
         countriesData,
-        varietalsData
+        varietalsData,
+        typesData
       ] = await Promise.all([
         getTaxonomyData('categories'),
         getTaxonomyData('brands'),
         getTaxonomyData('countries'),
-        getTaxonomyData('varietals')
+        getTaxonomyData('varietals'),
+        getTaxonomyData('types')
       ]);
       
       // Deduplicate and sort all arrays alphabetically
@@ -58,6 +61,7 @@ export const TaxonomyProvider = ({ children }) => {
       setBrands(removeDuplicates(brandsData).sort((a, b) => a.localeCompare(b)));
       setCountries(removeDuplicates(countriesData).sort((a, b) => a.localeCompare(b)));
       setVarietals(removeDuplicates(varietalsData).sort((a, b) => a.localeCompare(b)));
+      setTypes(removeDuplicates(typesData).sort((a, b) => a.localeCompare(b)));
       
       // Update last updated timestamp
       setLastUpdated(new Date());
@@ -80,6 +84,7 @@ export const TaxonomyProvider = ({ children }) => {
     brands,
     countries,
     varietals,
+    types,
     loading,
     error,
     lastUpdated,

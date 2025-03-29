@@ -192,7 +192,7 @@ function ExcelFileUploader() {
           {taxonomyCounts && (
             <div className="mt-3 pt-3 border-t border-green-200">
               <p className="text-sm font-medium mb-2">Taxonomy data extracted:</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
                 <div className="bg-white p-2 rounded shadow-sm">
                   <span className="font-medium">Categories:</span> {taxonomyCounts.categories}
                 </div>
@@ -204,6 +204,9 @@ function ExcelFileUploader() {
                 </div>
                 <div className="bg-white p-2 rounded shadow-sm">
                   <span className="font-medium">Varietals:</span> {taxonomyCounts.varietals}
+                </div>
+                <div className="bg-white p-2 rounded shadow-sm">
+                  <span className="font-medium">Types:</span> {taxonomyCounts.types}
                 </div>
               </div>
             </div>

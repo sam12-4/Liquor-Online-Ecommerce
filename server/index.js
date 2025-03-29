@@ -7,7 +7,7 @@ const { promisify } = require('util');
 const copyFile = promisify(fs.copyFile);
 const multer = require('multer');
 const connectDB = require('./config/db');
-const { Category, Brand, Country, Varietal } = require('./models');
+const { Category, Brand, Country, Varietal, Type } = require('./models');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -286,7 +286,7 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
       let taxonomyCounts = null;
       try {
         // Extract taxonomy data from products
-        const { categories, brands, countries, varietals } = extractUniqueValues(products);
+        const { categories, brands, countries, varietals, types } = extractUniqueValues(products);
         
         // Save to taxonomy files
         const taxonomyDir = path.join(__dirname, 'public', 'taxonomy');
@@ -315,6 +315,11 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
           JSON.stringify(varietals, null, 2)
         );
         
+        fs.writeFileSync(
+          path.join(taxonomyDir, 'types.json'), 
+          JSON.stringify(types, null, 2)
+        );
+        
         // Update MongoDB collections
         try {
           // Update collections with new values
@@ -322,6 +327,7 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
           await updateTaxonomyCollection(Brand, brands);
           await updateTaxonomyCollection(Country, countries);
           await updateTaxonomyCollection(Varietal, varietals);
+          await updateTaxonomyCollection(Type, types);
           
           console.log('MongoDB taxonomy collections updated after Excel upload');
           
@@ -329,7 +335,8 @@ app.post('/api/products/upload', upload.single('excelFile'), async (req, res) =>
             categories: categories.length,
             brands: brands.length,
             countries: countries.length,
-            varietals: varietals.length
+            varietals: varietals.length,
+            types: types.length
           };
         } catch (dbError) {
           console.error('Error updating MongoDB taxonomy collections after upload:', dbError);
@@ -627,12 +634,14 @@ function extractUniqueValues(products) {
   const brands = new Set();
   const countries = new Set();
   const varietals = new Set();
+  const types = new Set();
   
   // Case-insensitive tracking to prevent duplicates with different capitalization
   const categoriesLower = new Set();
   const brandsLower = new Set();
   const countriesLower = new Set();
   const varietalsLower = new Set();
+  const typesLower = new Set();
   
   products.forEach(product => {
     // Extract only from the primary field that the add/edit form uses
@@ -671,6 +680,15 @@ function extractUniqueValues(products) {
         varietalsLower.add(varietalLower);
       }
     }
+    
+    if (product.type && product.type.trim()) {
+      const type = product.type.trim();
+      const typeLower = type.toLowerCase();
+      if (!typesLower.has(typeLower)) {
+        types.add(type);
+        typesLower.add(typeLower);
+      }
+    }
   });
   
   // Convert to arrays
@@ -678,11 +696,12 @@ function extractUniqueValues(products) {
     categories: Array.from(categories),
     brands: Array.from(brands),
     countries: Array.from(countries),
-    varietals: Array.from(varietals)
+    varietals: Array.from(varietals),
+    types: Array.from(types)
   };
 }
 
-// Extract and save unique values for categories, brands, countries, and varietals
+// Extract and save unique values for categories, brands, countries, varietals, and types
 app.get('/api/extract-taxonomy', async (req, res) => {
   try {
     // Read products from Excel
@@ -693,7 +712,7 @@ app.get('/api/extract-taxonomy', async (req, res) => {
     }
     
     // Extract unique values
-    const { categories, brands, countries, varietals } = extractUniqueValues(products);
+    const { categories, brands, countries, varietals, types } = extractUniqueValues(products);
     
     // Save to taxonomy files
     const taxonomyDir = path.join(__dirname, 'public', 'taxonomy');
@@ -722,6 +741,11 @@ app.get('/api/extract-taxonomy', async (req, res) => {
       JSON.stringify(varietals, null, 2)
     );
     
+    fs.writeFileSync(
+      path.join(taxonomyDir, 'types.json'), 
+      JSON.stringify(types, null, 2)
+    );
+    
     // Update MongoDB collections
     try {
       // Clear and update categories collection
@@ -736,6 +760,9 @@ app.get('/api/extract-taxonomy', async (req, res) => {
       // Clear and update varietals collection
       await updateTaxonomyCollection(Varietal, varietals);
       
+      // Clear and update types collection
+      await updateTaxonomyCollection(Type, types);
+      
       console.log('MongoDB taxonomy collections updated successfully');
     } catch (dbError) {
       console.error('Error updating MongoDB taxonomy collections:', dbError);
@@ -749,7 +776,8 @@ app.get('/api/extract-taxonomy', async (req, res) => {
         categories: categories.length,
         brands: brands.length,
         countries: countries.length,
-        varietals: varietals.length
+        varietals: varietals.length,
+        types: types.length
       }
     });
   } catch (error) {
@@ -829,7 +857,7 @@ app.get('/api/taxonomy/:type', async (req, res) => {
     const { type } = req.params;
     
     // Validate type parameter
-    const validTypes = ['categories', 'brands', 'countries', 'varietals'];
+    const validTypes = ['categories', 'brands', 'countries', 'varietals', 'types'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: 'Invalid taxonomy type' });
     }
@@ -839,7 +867,8 @@ app.get('/api/taxonomy/:type', async (req, res) => {
       'categories': Category,
       'brands': Brand,
       'countries': Country,
-      'varietals': Varietal
+      'varietals': Varietal,
+      'types': Type
     };
     
     // Get the model
@@ -903,7 +932,8 @@ async function cleanupTaxonomyDuplicates() {
     { name: 'categories', model: Category },
     { name: 'brands', model: Brand },
     { name: 'countries', model: Country },
-    { name: 'varietals', model: Varietal }
+    { name: 'varietals', model: Varietal },
+    { name: 'types', model: Type }
   ];
 
   for (const { name, model } of collections) {
@@ -1000,6 +1030,72 @@ async function cleanupCollectionDuplicates(Model) {
     throw error;
   }
 }
+
+// Add a new taxonomy item
+app.post('/api/taxonomy/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { name } = req.body;
+    
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({ error: 'Name is required and must be a non-empty string' });
+    }
+    
+    // Validate type parameter
+    const validTypes = ['categories', 'brands', 'countries', 'varietals', 'types'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ error: 'Invalid taxonomy type' });
+    }
+    
+    // Map type to model
+    const modelMap = {
+      'categories': Category,
+      'brands': Brand,
+      'countries': Country,
+      'varietals': Varietal,
+      'types': Type
+    };
+    
+    // Get the model
+    const Model = modelMap[type];
+    
+    // Check if the item already exists (case-insensitive)
+    const existingItems = await Model.find({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+    
+    if (existingItems.length > 0) {
+      return res.status(409).json({ error: 'Item already exists' });
+    }
+    
+    // Create and save the new item
+    const newItem = new Model({ name: name.trim() });
+    await newItem.save();
+    
+    // Also update the JSON file
+    const filePath = path.join(__dirname, 'public', 'taxonomy', `${type}.json`);
+    let currentItems = [];
+    
+    // Read existing items if file exists
+    if (fs.existsSync(filePath)) {
+      currentItems = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+    
+    // Add new item to array and remove duplicates
+    currentItems.push(name.trim());
+    const uniqueItems = removeDuplicates(currentItems);
+    
+    // Write updated array back to file
+    fs.writeFileSync(filePath, JSON.stringify(uniqueItems, null, 2));
+    
+    res.status(201).json({ 
+      success: true, 
+      message: `Added new ${type.slice(0, -1)} successfully`,
+      item: newItem 
+    });
+  } catch (error) {
+    console.error(`Error adding taxonomy item:`, error);
+    res.status(500).json({ error: 'Failed to add taxonomy item', details: error.message });
+  }
+});
 
 // Start the server
 app.listen(PORT, () => {

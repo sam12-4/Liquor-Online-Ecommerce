@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getProducts } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
 import { BookmarkIcon } from '@heroicons/react/24/outline';
+import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
 
 function BrandsPage() {
   const [products, setProducts] = useState([]);
@@ -74,7 +75,7 @@ function BrandsPage() {
                   onClick={() => setSelectedBrand(brand)}
                   className={`w-full text-left px-3 py-2 rounded-md ${
                     selectedBrand === brand
-                      ? 'bg-indigo-100 text-indigo-700'
+                      ? 'bg-blue-100 text-blue-700'
                       : 'hover:bg-gray-100'
                   }`}
                 >
@@ -82,6 +83,16 @@ function BrandsPage() {
                 </button>
               ))}
             </div>
+            
+            {/* Add Brand Form */}
+            <TaxonomyAddForm 
+              type="brands" 
+              label="Brand" 
+              onSuccess={(newBrand) => {
+                // Select the newly added brand after it's added
+                setTimeout(() => setSelectedBrand(newBrand), 300);
+              }}
+            />
           </div>
           
           {/* Products in selected brand */}

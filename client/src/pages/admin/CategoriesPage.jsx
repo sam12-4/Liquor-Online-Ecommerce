@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getProducts } from '../../data/productLoader';
 import { useTaxonomy } from '../../context/TaxonomyContext';
 import { TagIcon } from '@heroicons/react/24/outline';
+import TaxonomyAddForm from '../../components/admin/TaxonomyAddForm';
 
 function CategoriesPage() {
   const [products, setProducts] = useState([]);
@@ -82,6 +83,16 @@ function CategoriesPage() {
                 </button>
               ))}
             </div>
+            
+            {/* Add Category Form */}
+            <TaxonomyAddForm 
+              type="categories" 
+              label="Category" 
+              onSuccess={(newCategory) => {
+                // Select the newly added category after it's added
+                setTimeout(() => setSelectedCategory(newCategory), 300);
+              }}
+            />
           </div>
           
           {/* Products in selected category */}

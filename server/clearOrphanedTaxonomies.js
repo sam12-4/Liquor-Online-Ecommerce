@@ -39,10 +39,20 @@ const varietalSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+const typeSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true,
+    unique: true,
+    trim: true
+  }
+}, { timestamps: true });
+
 const Category = mongoose.model('Category', categorySchema);
 const Brand = mongoose.model('Brand', brandSchema);
 const Country = mongoose.model('Country', countrySchema);
 const Varietal = mongoose.model('Varietal', varietalSchema);
+const Type = mongoose.model('Type', typeSchema);
 
 // Function to clean up orphaned entries
 async function cleanupOrphanedTaxonomies() {
@@ -57,7 +67,8 @@ async function cleanupOrphanedTaxonomies() {
       { name: 'categories', model: Category },
       { name: 'brands', model: Brand },
       { name: 'countries', model: Country },
-      { name: 'varietals', model: Varietal }
+      { name: 'varietals', model: Varietal },
+      { name: 'types', model: Type }
     ];
     
     for (const { name, model } of collections) {

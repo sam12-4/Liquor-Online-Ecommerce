@@ -41,6 +41,7 @@ const CategoriesPage = lazy(() => import('./pages/admin/CategoriesPage'));
 const BrandsPage = lazy(() => import('./pages/admin/BrandsPage'));
 const CountriesPage = lazy(() => import('./pages/admin/CountriesPage'));
 const VarietalsPage = lazy(() => import('./pages/admin/VarietalsPage'));
+const TypesPage = lazy(() => import('./pages/admin/TypesPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ExcelDemoPage = lazy(() => import('./pages/ExcelDemoPage'));
@@ -153,6 +154,7 @@ function App() {
                         <Route path="brands" element={<BrandsPage />} />
                         <Route path="countries" element={<CountriesPage />} />
                         <Route path="varietals" element={<VarietalsPage />} />
+                        <Route path="types" element={<TypesPage />} />
                       </Route>
                       
                       <Route path="*" element={<AnimatedNotFoundPage />} />
