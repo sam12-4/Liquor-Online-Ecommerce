@@ -114,6 +114,14 @@ const orderSchema = new mongoose.Schema({
     required: true,
     default: 0
   },
+  discount: {
+    type: Number,
+    default: 0
+  },
+  discountCode: {
+    type: String,
+    default: null
+  },
   total: {
     type: Number,
     required: true

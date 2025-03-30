@@ -2163,6 +2163,18 @@ app.post('/api/orders', async (req, res) => {
     const order = new Order(orderData);
     await order.save();
 
+    // If a discount code was used, increment its usage count
+    if (orderData.discountCode) {
+      const discountCode = await DiscountCode.findOne({ 
+        code: orderData.discountCode.trim().toUpperCase() 
+      });
+      
+      if (discountCode) {
+        discountCode.currentUses += 1;
+        await discountCode.save();
+      }
+    }
+
     // Create notification for registered users
     if (orderData.userType === 'registered' && orderData.userId) {
       const notification = new Notification({

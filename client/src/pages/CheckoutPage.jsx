@@ -29,7 +29,9 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [discount, setDiscount] = useState(0);
+  const [discountDetails, setDiscountDetails] = useState(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false); // Flag to prevent redirect during order processing
 
   // Customer information
@@ -268,10 +270,50 @@ const CheckoutPage = () => {
   };
 
   // Apply coupon
-  const applyCoupon = () => {
-    if (couponCode.toLowerCase() === 'discount10') {
-      setDiscount(subtotal * 0.1); // 10% discount
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('Please enter a discount code');
+      return;
+    }
+
+    try {
+      setApplyingCoupon(true);
+      
+      // Call the validate endpoint with the code and current subtotal
+      const response = await fetch('http://localhost:5000/api/discount-codes/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          code: couponCode,
+          subtotal: subtotal
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid discount code');
+      }
+
+      // Set discount amount and mark coupon as applied
+      setDiscount(data.discountAmount);
       setCouponApplied(true);
+      setDiscountDetails(data.discountCode);
+      
+      // Show success message
+      const discountText = data.discountCode.discountType === 'percentage' 
+        ? `${data.discountCode.discountValue}%` 
+        : `$${data.discountCode.discountValue.toFixed(2)}`;
+      
+      toast.success(`Discount code applied: ${discountText} off`);
+    } catch (error) {
+      console.error('Error applying discount code:', error);
+      toast.error(error.message || 'Failed to apply discount code');
+    } finally {
+      setApplyingCoupon(false);
     }
   };
 
@@ -313,6 +355,8 @@ const CheckoutPage = () => {
         shippingCost: shipping,
         subtotal: subtotal,
         tax: taxes,
+        discount: discount,
+        discountCode: couponApplied ? couponCode : null,
         total: total,
         paymentMethod: paymentInfo.method
       };
@@ -925,22 +969,25 @@ const CheckoutPage = () => {
                     placeholder="Discount code"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
-                    disabled={couponApplied}
+                    disabled={couponApplied || applyingCoupon}
                     className="flex-1 p-3 border border-gray-300 focus:border-[#c0a483]"
                   />
                   <button
                     type="button"
                     onClick={applyCoupon}
-                    disabled={couponApplied}
+                    disabled={couponApplied || applyingCoupon || !couponCode.trim()}
                     className="ml-2 bg-black text-white px-4 py-3 uppercase text-sm font-medium hover:bg-[#c0a483] transition-colors disabled:bg-gray-400"
                   >
-                    {couponApplied ? 'Applied' : 'Apply'}
+                    {applyingCoupon ? 'Applying...' : couponApplied ? 'Applied' : 'Apply'}
                   </button>
                 </div>
-                {couponApplied && (
+                {couponApplied && discountDetails && (
                   <div className="flex items-center mt-2 text-green-600 text-sm">
                     <CheckCircleIcon className="h-4 w-4 mr-1" />
-                    Coupon applied: 10% discount
+                    {discountDetails.type === 'referral' ? 'Referral' : 'Discount'} code applied: 
+                    {discountDetails.discountType === 'percentage' 
+                      ? ` ${discountDetails.discountValue}% off` 
+                      : ` $${discountDetails.discountValue.toFixed(2)} off`}
                   </div>
                 )}
               </div>
@@ -963,7 +1010,7 @@ const CheckoutPage = () => {
                 
                 {discount > 0 && (
                   <div className="flex justify-between py-2 text-green-600">
-                    <span>Discount</span>
+                    <span>Discount {couponCode && `(${couponCode.toUpperCase()})`}</span>
                     <span>-${discount.toFixed(2)}</span>
                   </div>
                 )}
