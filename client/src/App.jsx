@@ -10,6 +10,7 @@ import { ProductProvider } from './context/ProductContext';
 import { TaxonomyProvider } from './context/TaxonomyContext';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { UserAuthProvider } from './contexts/UserAuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -59,6 +60,8 @@ const SpecialOrdersPage = lazy(() => import('./pages/SpecialOrdersPage'));
 const PrivateCommercialPage = lazy(() => import('./pages/PrivateCommercialPage'));
 const FreeDrawPage = lazy(() => import('./pages/FreeDrawPage'));
 const BackupsManagement = lazy(() => import('./pages/admin/BackupsManagement'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const NotificationDetailPage = lazy(() => import('./pages/NotificationDetailPage'));
 
 // HOC to wrap pages with animation
 const withPageAnimation = (Component) => (props) => (
@@ -98,6 +101,8 @@ const AnimatedSpecialOrdersPage = withPageAnimation(SpecialOrdersPage);
 const AnimatedPrivateCommercialPage = withPageAnimation(PrivateCommercialPage);
 const AnimatedFreeDrawPage = withPageAnimation(FreeDrawPage);
 const AnimatedBackupsManagement = withPageAnimation(BackupsManagement);
+const AnimatedNotificationsPage = withPageAnimation(NotificationsPage);
+const AnimatedNotificationDetailPage = withPageAnimation(NotificationDetailPage);
 
 // Admin routes with authentication context
 const AdminRoutes = () => (
@@ -120,75 +125,68 @@ function App() {
   return (
     <Router>
       <div className="font-sans text-gray-800">
-        <ProductProvider>
-          <TaxonomyProvider>
-            <UserAuthProvider>
-              <AdminAuthProvider>
-                <CartProvider>
-                  <WishlistProvider>
-                    <ScrollToTop />
-                    <ToastContainer 
-                      position="top-right"
-                      autoClose={3000}
-                      hideProgressBar={false}
-                      newestOnTop
-                      closeOnClick
-                      rtl={false}
-                      pauseOnFocusLoss
-                      draggable
-                      pauseOnHover
-                      theme="light"
-                    />
-                    <Suspense fallback={<Loader />}>
-                      <Layout>
-                        <Routes>
-                          <Route path="/" element={<AnimatedHomePage />} />
-                          <Route path="/products" element={<AnimatedProductsPage />} />
-                          <Route path="/product/:id" element={<AnimatedProductPage />} />
-                          <Route path="/cart" element={<AnimatedCartPage />} />
-                          <Route path="/checkout" element={<AnimatedCheckoutPage />} />
-                          <Route path="/thank-you" element={<AnimatedThankYouPage />} />
-                          <Route path="/account" element={<AnimatedAccountPage />} />
-                          
-                          {/* Protected customer route - admins cannot access */}
-                          <Route 
-                            path="/my-account" 
-                            element={<ProtectedCustomerRoute element={<AnimatedMyAccountPage />} />}
-                          />
-                          
-                          <Route path="/wishlist" element={<AnimatedWishlistPage />} />
-                          <Route path="/about" element={<AnimatedAboutPage />} />
-                          <Route path="/contact" element={<AnimatedContactPage />} />
-                          <Route path="/shop" element={<AnimatedShopPage />} />
-                          <Route path="/login" element={<AnimatedLoginPage />} />
-                          <Route path="/register" element={<AnimatedRegisterPage />} />
-                          
-                          {/* Admin Routes */}
-                          <Route path="/admin" element={<AnimatedAdminLoginPage />} />
-                          <Route path="/admin/dashboard/*" element={<ProtectedAdminRoute element={<AdminRoutes />} />} />
-                          
-                          <Route path="/favorites" element={<AnimatedFavoritesPage />} />
-                          <Route path="/profile" element={<AnimatedProfilePage />} />
-                          <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
-                          <Route path="/search" element={<AnimatedSearchResultsPage />} />
-                          <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
-                          <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
-                          <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
-                          <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
-                          <Route path="/finance" element={<AnimatedFinancePage />} />
-                          <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
-                          <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
-                          <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
-                          <Route path="*" element={<AnimatedNotFoundPage />} />
-                        </Routes>
-                      </Layout>
-                    </Suspense>
-                  </WishlistProvider>
-                </CartProvider>
-              </AdminAuthProvider>
-            </UserAuthProvider>
-          </TaxonomyProvider>
-        </ProductProvider>
+        <ToastContainer />
+        <AdminAuthProvider>
+          <UserAuthProvider>
+            <NotificationProvider>
+              <ProductProvider>
+                <TaxonomyProvider>
+                  <CartProvider>
+                    <WishlistProvider>
+                      <ScrollToTop />
+                      <Suspense fallback={<Loader />}>
+                        <Layout>
+                          <Routes>
+                            <Route path="/" element={<AnimatedHomePage />} />
+                            <Route path="/products" element={<AnimatedProductsPage />} />
+                            <Route path="/product/:id" element={<AnimatedProductPage />} />
+                            <Route path="/cart" element={<AnimatedCartPage />} />
+                            <Route path="/checkout" element={<AnimatedCheckoutPage />} />
+                            <Route path="/thank-you" element={<AnimatedThankYouPage />} />
+                            <Route path="/account" element={<AnimatedAccountPage />} />
+                            
+                            {/* Protected customer route - admins cannot access */}
+                            <Route 
+                              path="/my-account" 
+                              element={<ProtectedCustomerRoute element={<AnimatedMyAccountPage />} />}
+                            />
+                            
+                            <Route path="/wishlist" element={<AnimatedWishlistPage />} />
+                            <Route path="/about" element={<AnimatedAboutPage />} />
+                            <Route path="/contact" element={<AnimatedContactPage />} />
+                            <Route path="/shop" element={<AnimatedShopPage />} />
+                            <Route path="/login" element={<AnimatedLoginPage />} />
+                            <Route path="/register" element={<AnimatedRegisterPage />} />
+                            
+                            {/* Admin Routes */}
+                            <Route path="/admin" element={<AnimatedAdminLoginPage />} />
+                            <Route path="/admin/dashboard/*" element={<ProtectedAdminRoute element={<AdminRoutes />} />} />
+                            
+                            <Route path="/favorites" element={<AnimatedFavoritesPage />} />
+                            <Route path="/profile" element={<AnimatedProfilePage />} />
+                            <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
+                            <Route path="/search" element={<AnimatedSearchResultsPage />} />
+                            <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
+                            <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
+                            <Route path="/notifications" element={<AnimatedNotificationsPage />} />
+                            <Route path="/notifications/:id" element={<AnimatedNotificationDetailPage />} />
+                            <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
+                            <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
+                            <Route path="/finance" element={<AnimatedFinancePage />} />
+                            <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
+                            <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
+                            <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
+                            <Route path="*" element={<AnimatedNotFoundPage />} />
+                          </Routes>
+                        </Layout>
+                      </Suspense>
+                    </WishlistProvider>
+                  </CartProvider>
+                </TaxonomyProvider>
+              </ProductProvider>
+            </NotificationProvider>
+          </UserAuthProvider>
+        </AdminAuthProvider>
       </div>
     </Router>
   );

@@ -49,6 +49,14 @@ const orderSchema = new mongoose.Schema({
     enum: ['registered', 'guest'],
     required: true
   },
+  userNotificationSeen: {
+    type: Boolean,
+    default: false
+  },
+  adminNotificationSeen: {
+    type: Boolean,
+    default: false
+  },
   customerInfo: {
     firstName: {
       type: String,

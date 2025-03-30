@@ -16,6 +16,7 @@ const User = require('./models/User');
 const Cart = require('./models/Cart');
 const Wishlist = require('./models/Wishlist');
 const Order = require('./models/Order');
+const Notification = require('./models/Notification');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
 const { sendOrderConfirmation } = require('./utils/emailService');
 
@@ -2160,6 +2161,19 @@ app.post('/api/orders', async (req, res) => {
     const order = new Order(orderData);
     await order.save();
 
+    // Create notification for registered users
+    if (orderData.userType === 'registered' && orderData.userId) {
+      const notification = new Notification({
+        userId: orderData.userId,
+        title: 'Order Placed',
+        message: `Your order #${order.orderId} has been placed successfully.`,
+        type: 'order_placed',
+        orderId: order.orderId,
+        orderStatus: order.status
+      });
+      await notification.save();
+    }
+
     // Send confirmation email
     try {
       await sendOrderConfirmation(order);
@@ -2301,6 +2315,84 @@ app.get('/api/orders/:orderId', authenticateUser, async (req, res) => {
   }
 });
 
+// Update order status (admin only)
+app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, note } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status is required'
+      });
+    }
+    
+    const order = await Order.findOne({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    // Update order status
+    const previousStatus = order.status;
+    order.status = status;
+    
+    // Add note to status history if provided
+    if (order.isModified('status')) {
+      const statusHistoryEntry = {
+        status,
+        date: new Date()
+      };
+      
+      if (note) {
+        statusHistoryEntry.note = note;
+      }
+      
+      order.statusHistory.push(statusHistoryEntry);
+    }
+    
+    await order.save();
+    
+    // Create notification for the user if registered
+    if (order.userType === 'registered' && order.userId) {
+      const statusVerb = status === 'delivered' ? 'has been' : 'is now';
+      
+      const notification = new Notification({
+        userId: order.userId,
+        title: `Order Status Updated`,
+        message: `Your order #${order.orderId} ${statusVerb} ${status}.`,
+        type: 'order_status_change',
+        orderId: order.orderId,
+        orderStatus: status
+      });
+      
+      await notification.save();
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Order status updated successfully',
+      order: {
+        orderId: order.orderId,
+        status: order.status,
+        previousStatus,
+        statusHistory: order.statusHistory
+      }
+    });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating order status',
+      error: error.message
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -2310,5 +2402,109 @@ app.listen(PORT, () => {
   if (fs.existsSync(clientExcelPath) && !fs.existsSync(EXCEL_FILE_PATH)) {
     fs.copyFileSync(clientExcelPath, EXCEL_FILE_PATH);
     console.log('Copied Excel file from client public folder');
+  }
+});
+
+// Add notification routes before the server listen statement
+
+// Get user notifications
+app.get('/api/notifications', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const notifications = await Notification.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(100);
+    
+    // Count unread notifications
+    const unreadCount = await Notification.countDocuments({ 
+      userId, 
+      read: false 
+    });
+    
+    res.status(200).json({
+      success: true,
+      notifications,
+      unreadCount
+    });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching notifications',
+      error: error.message
+    });
+  }
+});
+
+// Mark notification as read
+app.put('/api/notifications/:id/read', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const notificationId = req.params.id;
+    
+    const notification = await Notification.findById(notificationId);
+    
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+    
+    // Check if the user owns this notification
+    if (notification.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this notification'
+      });
+    }
+    
+    notification.read = true;
+    await notification.save();
+    
+    // Count remaining unread notifications
+    const unreadCount = await Notification.countDocuments({ 
+      userId, 
+      read: false 
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Notification marked as read',
+      unreadCount
+    });
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating notification',
+      error: error.message
+    });
+  }
+});
+
+// Mark all notifications as read
+app.put('/api/notifications/read-all', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    await Notification.updateMany(
+      { userId, read: false },
+      { $set: { read: true } }
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: 'All notifications marked as read',
+      unreadCount: 0
+    });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error marking all notifications as read',
+      error: error.message
+    });
   }
 }); 

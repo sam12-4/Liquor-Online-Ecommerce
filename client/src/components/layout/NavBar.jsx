@@ -17,6 +17,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import { getFilters } from '../../data/productLoader';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useUserAuth } from '../../contexts/UserAuthContext';
+import NotificationBell from './NotificationBell';
 
 // Import styles
 import '../../styles/navbar.css';
@@ -494,8 +495,8 @@ const NavBar = () => {
                     
                     <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg hidden group-hover:block z-50 border border-gray-200">
                       <div className="py-2">
-                        <Link to="/profile" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
-                          My Profile
+                        <Link to="/notifications" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                          My Notifications
                         </Link>
                         <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
                           My Orders
@@ -510,6 +511,13 @@ const NavBar = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {/* Notification Bell - only show for logged in users */}
+            {isUserAuthenticated && !isAdminAuthenticated && (
+              <div className="hidden md:block">
+                <NotificationBell />
               </div>
             )}
             
