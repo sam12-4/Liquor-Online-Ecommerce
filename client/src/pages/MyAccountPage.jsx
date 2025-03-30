@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UserIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ShieldCheckIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import AnimatedSection from '../components/home/AnimatedSection';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { GoogleLogin } from '@react-oauth/google';
@@ -40,6 +40,13 @@ const MyAccountPage = () => {
   const [touched, setTouched] = useState({
     login: {},
     register: {}
+  });
+  
+  // Password strength state
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    label: 'Weak',
+    color: 'bg-red-500'
   });
   
   useEffect(() => {
@@ -171,6 +178,40 @@ const MyAccountPage = () => {
     return Object.keys(errors).length === 0;
   };
   
+  // Calculate password strength
+  const calculatePasswordStrength = (password) => {
+    if (!password) {
+      return { score: 0, label: 'Weak', color: 'bg-red-500' };
+    }
+    
+    let score = 0;
+    
+    // Length check
+    if (password.length >= 8) score += 1;
+    if (password.length >= 12) score += 1;
+    
+    // Character variety checks
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    
+    // Determine strength level
+    let label, color;
+    if (score <= 2) {
+      label = 'Weak';
+      color = 'bg-red-500';
+    } else if (score <= 4) {
+      label = 'Medium';
+      color = 'bg-yellow-500';
+    } else {
+      label = 'Strong';
+      color = 'bg-green-500';
+    }
+    
+    return { score, label, color };
+  };
+  
   // Handle field blur for validation
   const handleBlur = (formType, field) => {
     setTouched(prev => ({
@@ -206,13 +247,18 @@ const MyAccountPage = () => {
     }));
   };
   
-  // Handle register form change
+  // Handle register form change with password strength calculation
   const handleRegisterChange = (e) => {
     const { name, value, type, checked } = e.target;
     setRegisterForm(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Calculate password strength when password field changes
+    if (name === 'password') {
+      setPasswordStrength(calculatePasswordStrength(value));
+    }
     
     // Clear specific error when field is changed
     setFormErrors(prev => ({
@@ -479,12 +525,36 @@ const MyAccountPage = () => {
                   className={`w-full p-3 border ${formErrors.register.password && touched.register.password ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483] focus:outline-none`}
                   required
                 />
+                {registerForm.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center mb-1">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className={`h-2.5 rounded-full ${passwordStrength.color}`} style={{ width: `${(passwordStrength.score / 6) * 100}%` }}></div>
+                      </div>
+                      <span className="ml-2 text-sm font-medium text-gray-600">{passwordStrength.label}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <div className={`text-xs px-2 py-1 rounded ${registerForm.password.length >= 8 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        8+ characters
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded ${/[A-Z]/.test(registerForm.password) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        Uppercase
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded ${/[a-z]/.test(registerForm.password) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        Lowercase
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded ${/[0-9]/.test(registerForm.password) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        Number
+                      </div>
+                      <div className={`text-xs px-2 py-1 rounded ${/[^A-Za-z0-9]/.test(registerForm.password) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        Special character
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {formErrors.register.password && touched.register.password && (
                   <p className="text-red-500 text-sm mt-1">{formErrors.register.password}</p>
                 )}
-                <div className="text-xs text-gray-500 mt-1">
-                  Password must be at least 6 characters and include uppercase, lowercase, and numbers.
-                </div>
               </div>
               
               <div className="mb-4">
@@ -506,48 +576,46 @@ const MyAccountPage = () => {
               </div>
               
               <div className="mb-6">
-                <label className={`flex items-center space-x-2 cursor-pointer text-sm ${formErrors.register.acceptTerms ? 'text-red-500' : 'text-gray-600'}`}>
+                <label className="flex items-start cursor-pointer">
                   <input 
                     type="checkbox" 
                     name="acceptTerms"
                     checked={registerForm.acceptTerms}
                     onChange={handleRegisterChange}
                     onBlur={() => handleBlur('register', 'acceptTerms')}
-                    className={`w-4 h-4 ${formErrors.register.acceptTerms ? 'border-red-500' : 'text-[#c0a483]'}`}
+                    className={`mt-1 w-4 h-4 ${formErrors.register.acceptTerms && touched.register.acceptTerms ? 'border-red-500' : 'border-gray-300'}`}
                   />
-                  <span>
-                    I agree to the <span className="text-[#c0a483]">terms and conditions</span> and the <span className="text-[#c0a483]">privacy policy</span>
+                  <span className="ml-2 text-gray-600">
+                    I agree to the <Link to="/terms-and-conditions" className="text-[#c0a483] hover:underline">Terms and Conditions</Link> and <Link to="/privacy-policy" className="text-[#c0a483] hover:underline">Privacy Policy</Link>
                   </span>
                 </label>
-                {formErrors.register.acceptTerms && (
+                {formErrors.register.acceptTerms && touched.register.acceptTerms && (
                   <p className="text-red-500 text-sm mt-1">{formErrors.register.acceptTerms}</p>
                 )}
               </div>
               
-              <button
+              <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 uppercase font-medium transition-colors disabled:bg-gray-200"
+                className="w-full bg-[#c0a483] text-white py-3 px-4 hover:bg-[#a38b6c] transition-colors"
               >
-                {loading ? 'REGISTERING...' : 'REGISTER'}
+                {loading ? 'Creating account...' : 'Register'}
               </button>
             </form>
             
-            <div className="my-6 relative flex items-center justify-center">
-              <div className="border-t border-gray-300 absolute w-full"></div>
-              <span className="bg-white px-4 relative text-gray-500 text-sm">OR</span>
-            </div>
-            
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleLoginSuccess}
-                onError={handleGoogleLoginError}
-                useOneTap
-                theme="outline"
-                shape="rectangular"
-                text="signup_with"
-                width="280"
-              />
+            <div className="mt-6 text-center">
+              <p className="text-gray-500 mb-4">Or sign up with</p>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleLoginSuccess}
+                  onError={handleGoogleLoginError}
+                  useOneTap
+                  theme="outline"
+                  shape="rectangular"
+                  text="signup_with"
+                  width="280"
+                />
+              </div>
             </div>
           </div>
         </div>

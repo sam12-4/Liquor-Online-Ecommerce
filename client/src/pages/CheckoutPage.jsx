@@ -73,6 +73,12 @@ const CheckoutPage = () => {
   const taxes = parseFloat((subtotal * 0.05).toFixed(2)); // 5% tax rate
   const total = subtotal + shipping + taxes - discount;
 
+  // Form validation states
+  const [formErrors, setFormErrors] = useState({
+    customerInfo: {},
+    payment: {}
+  });
+
   // If cart is empty, redirect to shop
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -89,6 +95,17 @@ const CheckoutPage = () => {
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
     }));
+    
+    // Clear error when field is changed
+    if (formErrors.customerInfo[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          [name]: ''
+        }
+      }));
+    }
   };
 
   const handlePaymentChange = (e) => {
@@ -97,33 +114,150 @@ const CheckoutPage = () => {
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
     }));
+    
+    // Clear error when field is changed
+    if (formErrors.payment[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        payment: {
+          ...prev.payment,
+          [name]: ''
+        }
+      }));
+    }
   };
 
   // Form validation
   const validateCustomerInfo = () => {
+    const errors = {};
     const { firstName, lastName, email, phone, address, city, province, postalCode } = customerInfo;
-    return firstName && lastName && email && phone && address && city && province && postalCode;
+    
+    // First name validation
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+    
+    // Last name validation
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
+    
+    // Email validation
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Phone validation
+    if (!phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[\d\s\-+()]{10,15}$/.test(phone.replace(/\s/g, ''))) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+    
+    // Address validation
+    if (!address.trim()) {
+      errors.address = 'Address is required';
+    }
+    
+    // City validation
+    if (!city.trim()) {
+      errors.city = 'City is required';
+    }
+    
+    // Province/State validation
+    if (!province.trim()) {
+      errors.province = 'Province/State is required';
+    }
+    
+    // Postal/Zip code validation
+    if (!postalCode.trim()) {
+      errors.postalCode = 'Postal/Zip code is required';
+    } else {
+      // Canadian postal code format: A1A 1A1
+      const canadianPostalRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+      // US zip code format: 12345 or 12345-6789
+      const usZipRegex = /^\d{5}(-\d{4})?$/;
+      
+      if (customerInfo.country === 'Canada' && !canadianPostalRegex.test(postalCode)) {
+        errors.postalCode = 'Please enter a valid Canadian postal code (e.g., A1A 1A1)';
+      } else if (customerInfo.country === 'United States' && !usZipRegex.test(postalCode)) {
+        errors.postalCode = 'Please enter a valid US ZIP code (e.g., 12345 or 12345-6789)';
+      }
+    }
+    
+    setFormErrors(prev => ({ ...prev, customerInfo: errors }));
+    return Object.keys(errors).length === 0;
   };
 
   const validatePaymentInfo = () => {
+    const errors = {};
+    
     if (paymentInfo.method === 'credit-card') {
       const { cardNumber, cardName, expiryDate, cvv } = paymentInfo;
-      return cardNumber && cardName && expiryDate && cvv;
+      
+      // Card number validation
+      if (!cardNumber.trim()) {
+        errors.cardNumber = 'Card number is required';
+      } else if (!/^\d{13,19}$/.test(cardNumber.replace(/\s/g, ''))) {
+        errors.cardNumber = 'Please enter a valid card number';
+      }
+      
+      // Card name validation
+      if (!cardName.trim()) {
+        errors.cardName = 'Name on card is required';
+      }
+      
+      // Expiry date validation
+      if (!expiryDate.trim()) {
+        errors.expiryDate = 'Expiry date is required';
+      } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
+        errors.expiryDate = 'Please use MM/YY format';
+      } else {
+        // Check if card is expired
+        const [month, year] = expiryDate.split('/');
+        const expiryMonth = parseInt(month, 10);
+        const expiryYear = parseInt('20' + year, 10);
+        
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+        const currentYear = now.getFullYear();
+        
+        if (expiryYear < currentYear || (expiryYear === currentYear && expiryMonth < currentMonth)) {
+          errors.expiryDate = 'Card has expired';
+        }
+      }
+      
+      // CVV validation
+      if (!cvv.trim()) {
+        errors.cvv = 'CVV is required';
+      } else if (!/^\d{3,4}$/.test(cvv)) {
+        errors.cvv = 'CVV must be 3 or 4 digits';
+      }
     }
-    return true; // For other payment methods
+    
+    setFormErrors(prev => ({ ...prev, payment: errors }));
+    return Object.keys(errors).length === 0;
   };
 
   // Handle step navigation
   const goToNextStep = () => {
-    if (step === 1 && validateCustomerInfo()) {
-      setStep(2);
-      window.scrollTo(0, 0);
+    if (step === 1) {
+      const isValid = validateCustomerInfo();
+      if (isValid) {
+        setStep(2);
+        window.scrollTo(0, 0);
+      }
     } else if (step === 2) {
       setStep(3);
       window.scrollTo(0, 0);
-    } else if (step === 3 && validatePaymentInfo()) {
-      // Place order
-      placeOrder();
+    } else if (step === 3) {
+      const isValid = validatePaymentInfo();
+      if (isValid) {
+        // Place order
+        placeOrder();
+      }
     }
   };
 
@@ -220,6 +354,50 @@ const CheckoutPage = () => {
     }
   };
 
+  // Format credit card number with spaces
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = (matches && matches[0]) || '';
+    const parts = [];
+    
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
+    }
+  };
+
+  // Format expiry date with slash
+  const formatExpiryDate = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    
+    if (v.length >= 2) {
+      return `${v.slice(0, 2)}/${v.slice(2, 4)}`;
+    }
+    
+    return v;
+  };
+
+  // Handle payment input with formatting
+  const handleFormattedPaymentChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'cardNumber') {
+      const formattedValue = formatCardNumber(value);
+      setPaymentInfo(prev => ({ ...prev, [name]: formattedValue }));
+    } else if (name === 'expiryDate') {
+      const formattedValue = formatExpiryDate(value);
+      setPaymentInfo(prev => ({ ...prev, [name]: formattedValue }));
+    } else {
+      handlePaymentChange(e);
+    }
+  };
+
   return (
     <div>
       {/* Hero Banner */}
@@ -252,80 +430,87 @@ const CheckoutPage = () => {
             <div className="bg-white p-6 border border-gray-200 mb-8">
               {step === 1 && (
                 <div>
-                  <h2 className="text-xl font-bold mb-6 flex items-center">
+                  <h3 className="font-semibold text-lg mb-6 flex items-center">
                     <UserIcon className="h-5 w-5 mr-2" />
-                    Contact Information
-                  </h2>
-                  
-                  <div className="mb-6">
-                    <label className="block text-gray-600 mb-2">
-                      Email address <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="email"
-                      name="email"
-                      value={customerInfo.email}
-                      onChange={handleInfoChange}
-                      className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label className="block text-gray-600 mb-2">
-                      Phone number <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="tel"
-                      name="phone"
-                      value={customerInfo.phone}
-                      onChange={handleInfoChange}
-                      className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
-                      required
-                    />
-                  </div>
-                  
-                  <h2 className="text-xl font-bold my-6 flex items-center">
-                    <TruckIcon className="h-5 w-5 mr-2" />
-                    Shipping Information
-                  </h2>
+                    Customer Information
+                  </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
-                        First name <span className="text-red-500">*</span>
+                        First Name <span className="text-red-500">*</span>
                       </label>
                       <input 
-                        type="text"
+                        type="text" 
                         name="firstName"
                         value={customerInfo.firstName}
                         onChange={handleInfoChange}
-                        className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                        className={`w-full p-3 border ${formErrors.customerInfo.firstName ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
                       />
+                      {formErrors.customerInfo.firstName && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.firstName}</p>
+                      )}
                     </div>
                     
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
-                        Last name <span className="text-red-500">*</span>
+                        Last Name <span className="text-red-500">*</span>
                       </label>
                       <input 
-                        type="text"
+                        type="text" 
                         name="lastName"
                         value={customerInfo.lastName}
                         onChange={handleInfoChange}
-                        className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                        className={`w-full p-3 border ${formErrors.customerInfo.lastName ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
                       />
+                      {formErrors.customerInfo.lastName && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.lastName}</p>
+                      )}
                     </div>
                   </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
-                      Company (optional)
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input 
-                      type="text"
+                      type="email" 
+                      name="email"
+                      value={customerInfo.email}
+                      onChange={handleInfoChange}
+                      className={`w-full p-3 border ${formErrors.customerInfo.email ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
+                      required
+                    />
+                    {formErrors.customerInfo.email && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.email}</p>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-gray-600 mb-2">
+                      Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="tel" 
+                      name="phone"
+                      value={customerInfo.phone}
+                      onChange={handleInfoChange}
+                      className={`w-full p-3 border ${formErrors.customerInfo.phone ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
+                      required
+                    />
+                    {formErrors.customerInfo.phone && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.phone}</p>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4">
+                    <label className="block text-gray-600 mb-2">
+                      Company (Optional)
+                    </label>
+                    <input 
+                      type="text" 
                       name="company"
                       value={customerInfo.company}
                       onChange={handleInfoChange}
@@ -338,21 +523,24 @@ const CheckoutPage = () => {
                       Address <span className="text-red-500">*</span>
                     </label>
                     <input 
-                      type="text"
+                      type="text" 
                       name="address"
                       value={customerInfo.address}
                       onChange={handleInfoChange}
-                      className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                      className={`w-full p-3 border ${formErrors.customerInfo.address ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                       required
                     />
+                    {formErrors.customerInfo.address && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.address}</p>
+                    )}
                   </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
-                      Apartment, suite, etc. (optional)
+                      Apartment, suite, etc. (Optional)
                     </label>
                     <input 
-                      type="text"
+                      type="text" 
                       name="apartment"
                       value={customerInfo.apartment}
                       onChange={handleInfoChange}
@@ -360,19 +548,22 @@ const CheckoutPage = () => {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         City <span className="text-red-500">*</span>
                       </label>
                       <input 
-                        type="text"
+                        type="text" 
                         name="city"
                         value={customerInfo.city}
                         onChange={handleInfoChange}
-                        className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                        className={`w-full p-3 border ${formErrors.customerInfo.city ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
                       />
+                      {formErrors.customerInfo.city && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.city}</p>
+                      )}
                     </div>
                     
                     <div className="mb-4">
@@ -380,45 +571,53 @@ const CheckoutPage = () => {
                         Province/State <span className="text-red-500">*</span>
                       </label>
                       <input 
-                        type="text"
+                        type="text" 
                         name="province"
                         value={customerInfo.province}
                         onChange={handleInfoChange}
-                        className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                        className={`w-full p-3 border ${formErrors.customerInfo.province ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
                       />
+                      {formErrors.customerInfo.province && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.province}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mb-4">
+                      <label className="block text-gray-600 mb-2">
+                        Postal/ZIP Code <span className="text-red-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        name="postalCode"
+                        value={customerInfo.postalCode}
+                        onChange={handleInfoChange}
+                        className={`w-full p-3 border ${formErrors.customerInfo.postalCode ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
+                        required
+                      />
+                      {formErrors.customerInfo.postalCode && (
+                        <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.postalCode}</p>
+                      )}
                     </div>
                     
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
-                        Postal code <span className="text-red-500">*</span>
+                        Country <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="text"
-                        name="postalCode"
-                        value={customerInfo.postalCode}
+                      <select 
+                        name="country"
+                        value={customerInfo.country}
                         onChange={handleInfoChange}
                         className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
                         required
-                      />
+                      >
+                        <option value="Canada">Canada</option>
+                        <option value="United States">United States</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                      </select>
                     </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-gray-600 mb-2">
-                      Country <span className="text-red-500">*</span>
-                    </label>
-                    <select 
-                      name="country"
-                      value={customerInfo.country}
-                      onChange={handleInfoChange}
-                      className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
-                      required
-                    >
-                      <option value="Canada">Canada</option>
-                      <option value="United States">United States</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                    </select>
                   </div>
                   
                   <div className="mb-6">
@@ -512,10 +711,10 @@ const CheckoutPage = () => {
                           </div>
                         </div>
                         <span className="font-medium">Credit Card</span>
-                        <div className="ml-auto flex space-x-2">
+                        <div className="flex ml-auto space-x-2">
                           <img src="https://cdn-icons-png.flaticon.com/512/196/196578.png" alt="Visa" className="h-6" />
                           <img src="https://cdn-icons-png.flaticon.com/512/196/196561.png" alt="MasterCard" className="h-6" />
-                          <img src="https://cdn-icons-png.flaticon.com/512/196/196539.png" alt="Amex" className="h-6" />
+                          <img src="https://cdn-icons-png.flaticon.com/512/196/196542.png" alt="Amex" className="h-6" />
                         </div>
                       </div>
                       
@@ -526,14 +725,18 @@ const CheckoutPage = () => {
                               Card Number <span className="text-red-500">*</span>
                             </label>
                             <input 
-                              type="text"
+                              type="text" 
                               name="cardNumber"
                               value={paymentInfo.cardNumber}
-                              onChange={handlePaymentChange}
+                              onChange={handleFormattedPaymentChange}
                               placeholder="1234 5678 9012 3456"
-                              className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                              className={`w-full p-3 border ${formErrors.payment.cardNumber ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                               required
+                              maxLength="19"
                             />
+                            {formErrors.payment.cardNumber && (
+                              <p className="text-red-500 text-sm mt-1">{formErrors.payment.cardNumber}</p>
+                            )}
                           </div>
                           
                           <div>
@@ -541,13 +744,16 @@ const CheckoutPage = () => {
                               Name on Card <span className="text-red-500">*</span>
                             </label>
                             <input 
-                              type="text"
+                              type="text" 
                               name="cardName"
                               value={paymentInfo.cardName}
-                              onChange={handlePaymentChange}
-                              className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                              onChange={handleFormattedPaymentChange}
+                              className={`w-full p-3 border ${formErrors.payment.cardName ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                               required
                             />
+                            {formErrors.payment.cardName && (
+                              <p className="text-red-500 text-sm mt-1">{formErrors.payment.cardName}</p>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4">
@@ -556,14 +762,18 @@ const CheckoutPage = () => {
                                 Expiry Date <span className="text-red-500">*</span>
                               </label>
                               <input 
-                                type="text"
+                                type="text" 
                                 name="expiryDate"
                                 value={paymentInfo.expiryDate}
-                                onChange={handlePaymentChange}
+                                onChange={handleFormattedPaymentChange}
                                 placeholder="MM/YY"
-                                className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                                className={`w-full p-3 border ${formErrors.payment.expiryDate ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                                 required
+                                maxLength="5"
                               />
+                              {formErrors.payment.expiryDate && (
+                                <p className="text-red-500 text-sm mt-1">{formErrors.payment.expiryDate}</p>
+                              )}
                             </div>
                             
                             <div>
@@ -571,14 +781,18 @@ const CheckoutPage = () => {
                                 CVV <span className="text-red-500">*</span>
                               </label>
                               <input 
-                                type="text"
+                                type="text" 
                                 name="cvv"
                                 value={paymentInfo.cvv}
-                                onChange={handlePaymentChange}
+                                onChange={handleFormattedPaymentChange}
                                 placeholder="123"
-                                className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
+                                className={`w-full p-3 border ${formErrors.payment.cvv ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                                 required
+                                maxLength="4"
                               />
+                              {formErrors.payment.cvv && (
+                                <p className="text-red-500 text-sm mt-1">{formErrors.payment.cvv}</p>
+                              )}
                             </div>
                           </div>
                           
@@ -588,7 +802,7 @@ const CheckoutPage = () => {
                                 type="checkbox" 
                                 name="saveCard"
                                 checked={paymentInfo.saveCard}
-                                onChange={handlePaymentChange}
+                                onChange={handleFormattedPaymentChange}
                                 className="w-4 h-4 text-[#c0a483]" 
                               />
                               <span className="text-gray-600">Save this card for future purchases</span>
