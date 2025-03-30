@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   CheckCircleIcon, 
@@ -11,23 +11,131 @@ import {
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 
+// Maximum age of order data in milliseconds (5 minutes)
+const MAX_ORDER_AGE = 5 * 60 * 1000;
+
 const ThankYouPage = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { orderNumber, email, orderDate, orderStatus } = location.state || {};
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const hasNavigated = useRef(false);
+  const didMount = useRef(false);
+
+  // Check if order data is recent enough to be valid
+  const isValidOrderData = (data) => {
+    if (!data || !data.timestamp) return false;
+    
+    const now = Date.now();
+    const orderTime = data.timestamp;
+    const age = now - orderTime;
+    
+    return age < MAX_ORDER_AGE;
+  };
 
   useEffect(() => {
     document.title = 'Order Confirmation | Liquor Store';
     
-    // Redirect if no order number
-    if (!orderNumber) {
-      navigate('/');
+    // Only run this code once
+    if (didMount.current) return;
+    didMount.current = true;
+    
+    // Prevent duplicate navigation
+    if (hasNavigated.current) return;
+    
+    // Get order data from sessionStorage
+    const storedOrderData = sessionStorage.getItem('orderInfo');
+    console.log('Retrieved from sessionStorage:', storedOrderData);
+    
+    if (storedOrderData) {
+      try {
+        const parsedData = JSON.parse(storedOrderData);
+        
+        // Check if order data is recent enough
+        if (isValidOrderData(parsedData)) {
+          setOrderData(parsedData);
+          // Store in localStorage as backup in case of page refresh
+          localStorage.setItem('lastOrderInfo', storedOrderData);
+          setLoading(false);
+        } else {
+          console.log('Order data expired, redirecting to home');
+          // Clear expired data
+          sessionStorage.removeItem('orderInfo');
+          localStorage.removeItem('lastOrderInfo');
+          hasNavigated.current = true;
+          navigate('/', { replace: true });
+        }
+      } catch (error) {
+        console.error('Error parsing order data:', error);
+        // Try backup from localStorage
+        const backupData = localStorage.getItem('lastOrderInfo');
+        if (backupData) {
+          try {
+            const parsedBackup = JSON.parse(backupData);
+            if (isValidOrderData(parsedBackup)) {
+              setOrderData(parsedBackup);
+              setLoading(false);
+              return;
+            } else {
+              // Clear expired backup data
+              localStorage.removeItem('lastOrderInfo');
+            }
+          } catch (e) {
+            console.error('Error parsing backup data:', e);
+          }
+        }
+        
+        hasNavigated.current = true;
+        navigate('/', { replace: true });
+      }
+    } else {
+      // Try backup from localStorage
+      const backupData = localStorage.getItem('lastOrderInfo');
+      if (backupData) {
+        try {
+          const parsedBackup = JSON.parse(backupData);
+          if (isValidOrderData(parsedBackup)) {
+            setOrderData(parsedBackup);
+            setLoading(false);
+            return;
+          } else {
+            // Clear expired backup data
+            localStorage.removeItem('lastOrderInfo');
+          }
+        } catch (e) {
+          console.error('Error parsing backup data:', e);
+        }
+      }
+      
+      console.log('No order information found, redirecting to home');
+      hasNavigated.current = true;
+      navigate('/', { replace: true });
     }
-  }, [orderNumber, navigate]);
+    
+    // Don't remove the data in the cleanup function
+  }, [navigate]);
+  
+  // User-initiated cleanup when leaving the page
+  useEffect(() => {
+    return () => {
+      // Clear order data when navigating away
+      sessionStorage.removeItem('orderInfo');
+      localStorage.removeItem('lastOrderInfo');
+    };
+  }, []);
 
-  if (!orderNumber) {
-    return null;
+  // Show a loading state while we check for order data
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c0a483]"></div>
+      </div>
+    );
   }
+
+  // After loading, if no order data, we'll already have redirected
+  if (!orderData) return null;
+
+  const { orderNumber, email, orderDate, orderStatus } = orderData;
 
   // Format date if available
   const formattedDate = orderDate ? format(new Date(orderDate), 'MMM dd, yyyy, h:mm a') : 'Processing';
@@ -105,11 +213,17 @@ const ThankYouPage = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/" className="btn btn-primary flex items-center justify-center">
+          <Link 
+            to="/" 
+            className="py-3 px-6 text-white bg-[#c0a483] hover:bg-black rounded flex items-center justify-center transition-colors duration-300"
+          >
             <HomeIcon className="h-5 w-5 mr-2" />
             Return Home
           </Link>
-          <Link to="/products" className="btn btn-outline flex items-center justify-center">
+          <Link 
+            to="/shop" 
+            className="py-3 px-6 text-gray-700 border border-gray-300 hover:bg-gray-100 rounded flex items-center justify-center transition-colors duration-300"
+          >
             <ShoppingBagIcon className="h-5 w-5 mr-2" />
             Continue Shopping
           </Link>

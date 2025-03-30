@@ -30,6 +30,7 @@ const CheckoutPage = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [discount, setDiscount] = useState(0);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false); // Flag to prevent redirect during order processing
 
   // Customer information
   const [customerInfo, setCustomerInfo] = useState({
@@ -79,14 +80,14 @@ const CheckoutPage = () => {
     payment: {}
   });
 
-  // If cart is empty, redirect to shop
+  // Only redirect if cart is empty AND we're not in the middle of order processing
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !isProcessingOrder) {
       navigate('/shop');
     }
 
     document.title = 'Checkout - Liquor Online';
-  }, [cartItems.length, navigate]);
+  }, [cartItems.length, navigate, isProcessingOrder]);
 
   // Handle form input changes
   const handleInfoChange = (e) => {
@@ -246,8 +247,8 @@ const CheckoutPage = () => {
     if (step === 1) {
       const isValid = validateCustomerInfo();
       if (isValid) {
-        setStep(2);
-        window.scrollTo(0, 0);
+      setStep(2);
+      window.scrollTo(0, 0);
       }
     } else if (step === 2) {
       setStep(3);
@@ -255,8 +256,8 @@ const CheckoutPage = () => {
     } else if (step === 3) {
       const isValid = validatePaymentInfo();
       if (isValid) {
-        // Place order
-        placeOrder();
+      // Place order
+      placeOrder();
       }
     }
   };
@@ -277,6 +278,7 @@ const CheckoutPage = () => {
   // Place order
   const placeOrder = async () => {
     setLoading(true);
+    setIsProcessingOrder(true); // Set processing flag to prevent redirect
     
     try {
       // Prepare order data
@@ -315,28 +317,44 @@ const CheckoutPage = () => {
         paymentMethod: paymentInfo.method
       };
       
+      console.log('Sending order data:', orderData);
+      
       // Submit order to API
       const response = await createOrder(orderData);
       
+      console.log('Order API response:', response);
+      
       if (response.success) {
-        // Clear cart
-        clearCart();
+        // Store order data before clearing the cart
+        const orderInfo = {
+          orderNumber: response.order.orderId,
+          email: customerInfo.email,
+          orderDate: response.order.createdAt,
+          orderStatus: response.order.status,
+          timestamp: Date.now() // Add timestamp to track when this order was placed
+        };
         
-        // Navigate to thank you page with order info
-        navigate('/thank-you', { 
-          state: { 
-            orderNumber: response.order.orderId,
-            email: customerInfo.email,
-            orderDate: response.order.createdAt,
-            orderStatus: response.order.status
-          } 
-        });
+        console.log('Navigating to thank-you page with data:', orderInfo);
+        
+        // First store data in sessionStorage
+        sessionStorage.setItem('orderInfo', JSON.stringify(orderInfo));
+        
+        // Then navigate directly (no setTimeout)
+        navigate('/thank-you');
+        
+        // Only clear cart after navigation is complete
+        setTimeout(() => {
+          clearCart();
+          setIsProcessingOrder(false);
+        }, 500);
       } else {
+        setIsProcessingOrder(false);
         throw new Error('Failed to create order');
       }
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('There was a problem placing your order. Please try again.');
+      setIsProcessingOrder(false);
     } finally {
       setLoading(false);
     }
@@ -425,11 +443,11 @@ const CheckoutPage = () => {
 
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
-          {/* Form Section */}
-          <div className="lg:w-2/3">
+        {/* Form Section */}
+        <div className="lg:w-2/3">
             <div className="bg-white p-6 border border-gray-200 mb-8">
-              {step === 1 && (
-                <div>
+                {step === 1 && (
+                      <div>
                   <h3 className="font-semibold text-lg mb-6 flex items-center">
                     <UserIcon className="h-5 w-5 mr-2" />
                     Customer Information
@@ -439,64 +457,64 @@ const CheckoutPage = () => {
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         First Name <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        name="firstName"
-                        value={customerInfo.firstName}
-                        onChange={handleInfoChange}
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={customerInfo.firstName}
+                          onChange={handleInfoChange}
                         className={`w-full p-3 border ${formErrors.customerInfo.firstName ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
-                      />
+                        />
                       {formErrors.customerInfo.firstName && (
                         <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.firstName}</p>
                       )}
-                    </div>
+                      </div>
                     
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         Last Name <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        name="lastName"
-                        value={customerInfo.lastName}
-                        onChange={handleInfoChange}
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={customerInfo.lastName}
+                          onChange={handleInfoChange}
                         className={`w-full p-3 border ${formErrors.customerInfo.lastName ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
-                      />
+                        />
                       {formErrors.customerInfo.lastName && (
                         <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.lastName}</p>
                       )}
                     </div>
-                  </div>
+                      </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
                       Email <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="email" 
-                      name="email"
-                      value={customerInfo.email}
-                      onChange={handleInfoChange}
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={customerInfo.email}
+                          onChange={handleInfoChange}
                       className={`w-full p-3 border ${formErrors.customerInfo.email ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                       required
-                    />
+                        />
                     {formErrors.customerInfo.email && (
                       <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.email}</p>
                     )}
-                  </div>
+                      </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
                       Phone <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="tel" 
-                      name="phone"
-                      value={customerInfo.phone}
-                      onChange={handleInfoChange}
+                        </label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={customerInfo.phone}
+                          onChange={handleInfoChange}
                       className={`w-full p-3 border ${formErrors.customerInfo.phone ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                       required
                     />
@@ -515,66 +533,66 @@ const CheckoutPage = () => {
                       value={customerInfo.company}
                       onChange={handleInfoChange}
                       className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
-                    />
-                  </div>
+                        />
+                      </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
                       Address <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      name="address"
-                      value={customerInfo.address}
-                      onChange={handleInfoChange}
+                        </label>
+                        <input
+                          type="text"
+                          name="address"
+                          value={customerInfo.address}
+                          onChange={handleInfoChange}
                       className={`w-full p-3 border ${formErrors.customerInfo.address ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                       required
-                    />
+                        />
                     {formErrors.customerInfo.address && (
                       <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.address}</p>
                     )}
-                  </div>
+                      </div>
                   
                   <div className="mb-4">
                     <label className="block text-gray-600 mb-2">
-                      Apartment, suite, etc. (Optional)
-                    </label>
-                    <input 
-                      type="text" 
-                      name="apartment"
-                      value={customerInfo.apartment}
-                      onChange={handleInfoChange}
+                          Apartment, suite, etc. (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          name="apartment"
+                          value={customerInfo.apartment}
+                          onChange={handleInfoChange}
                       className="w-full p-3 border border-gray-300 focus:border-[#c0a483]"
-                    />
-                  </div>
+                        />
+                      </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         City <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        name="city"
-                        value={customerInfo.city}
-                        onChange={handleInfoChange}
+                          </label>
+                          <input
+                            type="text"
+                            name="city"
+                            value={customerInfo.city}
+                            onChange={handleInfoChange}
                         className={`w-full p-3 border ${formErrors.customerInfo.city ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
-                      />
+                          />
                       {formErrors.customerInfo.city && (
                         <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.city}</p>
                       )}
-                    </div>
+                        </div>
                     
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         Province/State <span className="text-red-500">*</span>
-                      </label>
+                          </label>
                       <input 
                         type="text" 
-                        name="province"
-                        value={customerInfo.province}
-                        onChange={handleInfoChange}
+                            name="province"
+                            value={customerInfo.province}
+                            onChange={handleInfoChange}
                         className={`w-full p-3 border ${formErrors.customerInfo.province ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
                       />
@@ -582,21 +600,21 @@ const CheckoutPage = () => {
                         <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.province}</p>
                       )}
                     </div>
-                  </div>
+                        </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="mb-4">
                       <label className="block text-gray-600 mb-2">
                         Postal/ZIP Code <span className="text-red-500">*</span>
-                      </label>
-                      <input 
-                        type="text" 
-                        name="postalCode"
-                        value={customerInfo.postalCode}
-                        onChange={handleInfoChange}
+                          </label>
+                          <input
+                            type="text"
+                            name="postalCode"
+                            value={customerInfo.postalCode}
+                            onChange={handleInfoChange}
                         className={`w-full p-3 border ${formErrors.customerInfo.postalCode ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                         required
-                      />
+                          />
                       {formErrors.customerInfo.postalCode && (
                         <p className="text-red-500 text-sm mt-1">{formErrors.customerInfo.postalCode}</p>
                       )}
@@ -633,73 +651,73 @@ const CheckoutPage = () => {
                     </label>
                   </div>
                 </div>
-              )}
-              
-              {step === 2 && (
+                )}
+
+                {step === 2 && (
                 <div>
                   <h2 className="text-xl font-bold mb-6 flex items-center">
                     <TruckIcon className="h-5 w-5 mr-2" />
                     Shipping Method
                   </h2>
                   
-                  <div className="space-y-4 mb-6">
+                    <div className="space-y-4 mb-6">
                     {shippingOptions.map(option => (
-                      <div 
-                        key={option.id}
+                        <div
+                          key={option.id}
                         className={`border p-4 cursor-pointer ${shippingMethod === option.id ? 'border-[#c0a483] bg-[#f9f6f2]' : 'border-gray-200'}`}
-                        onClick={() => setShippingMethod(option.id)}
-                      >
-                        <div className="flex items-center">
-                          <div className="mr-3">
+                          onClick={() => setShippingMethod(option.id)}
+                        >
+                          <div className="flex items-center">
+                            <div className="mr-3">
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${shippingMethod === option.id ? 'border-[#c0a483]' : 'border-gray-300'}`}>
                               {shippingMethod === option.id && <div className="w-3 h-3 rounded-full bg-[#c0a483]"></div>}
                             </div>
-                          </div>
-                          <div className="flex-1">
+                            </div>
+                            <div className="flex-1">
                             <div className="flex justify-between">
                               <span className="font-medium">{option.name}</span>
                               <span className="font-bold">${option.price.toFixed(2)}</span>
-                            </div>
+                              </div>
                             <div className="text-sm text-gray-600 flex items-center mt-1">
                               <ClockIcon className="h-4 w-4 mr-1" />
                               {option.day}
                             </div>
                             <p className="text-sm text-gray-500 mt-1">{option.description}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
                   
                   <div className="flex items-center my-6">
                     <div className="w-full h-px bg-gray-200"></div>
                     <div className="px-4 text-gray-500 whitespace-nowrap">or</div>
                     <div className="w-full h-px bg-gray-200"></div>
-                  </div>
+                    </div>
                   
                   <div className="flex justify-between mb-4">
-                    <button
-                      type="button"
-                      onClick={goToPreviousStep}
+                      <button
+                        type="button"
+                        onClick={goToPreviousStep}
                       className="text-gray-600 hover:text-[#c0a483] flex items-center"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
                       </svg>
                       Return to shipping
-                    </button>
-                  </div>
+                      </button>
+                    </div>
                 </div>
-              )}
-              
-              {step === 3 && (
+                )}
+
+                {step === 3 && (
                 <div>
                   <h2 className="text-xl font-bold mb-6 flex items-center">
                     <CreditCardIcon className="h-5 w-5 mr-2" />
                     Payment
                   </h2>
                   
-                  <div className="space-y-4 mb-6">
+                    <div className="space-y-4 mb-6">
                     <div 
                       className={`border p-4 cursor-pointer ${paymentInfo.method === 'credit-card' ? 'border-[#c0a483] bg-[#f9f6f2]' : 'border-gray-200'}`}
                       onClick={() => setPaymentInfo(prev => ({ ...prev, method: 'credit-card' }))}
@@ -720,12 +738,12 @@ const CheckoutPage = () => {
                       
                       {paymentInfo.method === 'credit-card' && (
                         <div className="mt-4 space-y-4">
-                          <div>
+                      <div>
                             <label className="block text-gray-600 mb-2">
                               Card Number <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              type="text" 
+                        </label>
+                        <input
+                          type="text"
                               name="cardNumber"
                               value={paymentInfo.cardNumber}
                               onChange={handleFormattedPaymentChange}
@@ -737,14 +755,14 @@ const CheckoutPage = () => {
                             {formErrors.payment.cardNumber && (
                               <p className="text-red-500 text-sm mt-1">{formErrors.payment.cardNumber}</p>
                             )}
-                          </div>
+                      </div>
                           
-                          <div>
+                      <div>
                             <label className="block text-gray-600 mb-2">
                               Name on Card <span className="text-red-500">*</span>
-                            </label>
-                            <input 
-                              type="text" 
+                        </label>
+                        <input
+                          type="text"
                               name="cardName"
                               value={paymentInfo.cardName}
                               onChange={handleFormattedPaymentChange}
@@ -754,36 +772,36 @@ const CheckoutPage = () => {
                             {formErrors.payment.cardName && (
                               <p className="text-red-500 text-sm mt-1">{formErrors.payment.cardName}</p>
                             )}
-                          </div>
+                      </div>
                           
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
                               <label className="block text-gray-600 mb-2">
                                 Expiry Date <span className="text-red-500">*</span>
-                              </label>
-                              <input 
-                                type="text" 
-                                name="expiryDate"
-                                value={paymentInfo.expiryDate}
+                          </label>
+                          <input
+                            type="text"
+                            name="expiryDate"
+                            value={paymentInfo.expiryDate}
                                 onChange={handleFormattedPaymentChange}
-                                placeholder="MM/YY"
+                            placeholder="MM/YY"
                                 className={`w-full p-3 border ${formErrors.payment.expiryDate ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
                                 required
                                 maxLength="5"
-                              />
+                          />
                               {formErrors.payment.expiryDate && (
                                 <p className="text-red-500 text-sm mt-1">{formErrors.payment.expiryDate}</p>
                               )}
-                            </div>
+                        </div>
                             
-                            <div>
+                        <div>
                               <label className="block text-gray-600 mb-2">
                                 CVV <span className="text-red-500">*</span>
-                              </label>
-                              <input 
-                                type="text" 
-                                name="cvv"
-                                value={paymentInfo.cvv}
+                          </label>
+                          <input
+                            type="text"
+                            name="cvv"
+                            value={paymentInfo.cvv}
                                 onChange={handleFormattedPaymentChange}
                                 placeholder="123"
                                 className={`w-full p-3 border ${formErrors.payment.cvv ? 'border-red-500' : 'border-gray-300'} focus:border-[#c0a483]`}
@@ -793,9 +811,9 @@ const CheckoutPage = () => {
                               {formErrors.payment.cvv && (
                                 <p className="text-red-500 text-sm mt-1">{formErrors.payment.cvv}</p>
                               )}
-                            </div>
-                          </div>
-                          
+                      </div>
+                    </div>
+                    
                           <div>
                             <label className="flex items-center space-x-2 cursor-pointer">
                               <input 
@@ -807,7 +825,7 @@ const CheckoutPage = () => {
                               />
                               <span className="text-gray-600">Save this card for future purchases</span>
                             </label>
-                          </div>
+                    </div>
                         </div>
                       )}
                     </div>
@@ -825,51 +843,51 @@ const CheckoutPage = () => {
                         <span className="font-medium">PayPal</span>
                         <img src="https://cdn-icons-png.flaticon.com/512/174/174861.png" alt="PayPal" className="h-6 ml-auto" />
                       </div>
+                      </div>
                     </div>
-                  </div>
-                  
+
                   <div className="flex items-center justify-between mt-6">
-                    <button
-                      type="button"
-                      onClick={goToPreviousStep}
+                      <button
+                        type="button"
+                        onClick={goToPreviousStep}
                       className="text-gray-600 hover:text-[#c0a483] flex items-center"
-                    >
+                      >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
                       </svg>
                       Return to shipping method
-                    </button>
+                      </button>
                   </div>
                 </div>
               )}
               
               <div className="mt-8">
-                <button
+                      <button
                   type="button"
                   onClick={goToNextStep}
-                  disabled={loading}
+                        disabled={loading}
                   className={`w-full py-3 uppercase font-semibold transition-colors ${
                     step === 3 
                       ? 'bg-[#c0a483] hover:bg-[#a38b6c] text-white'
                       : 'bg-black hover:bg-gray-800 text-white'
                   }`}
-                >
-                  {loading ? (
+                      >
+                        {loading ? (
                     <span className="flex items-center justify-center">
                       <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
                     </span>
                   ) : step === 3 ? 'Place Order' : step === 2 ? 'Continue to Payment' : 'Continue to Shipping'}
-                </button>
-              </div>
+                      </button>
+                    </div>
             </div>
-          </div>
-          
-          {/* Order Summary */}
-          <div className="lg:w-1/3">
+        </div>
+
+        {/* Order Summary */}
+        <div className="lg:w-1/3">
             <div className="bg-white p-6 border border-gray-200 sticky top-6">
               <h2 className="text-xl font-bold mb-6 flex items-center">
                 <ShoppingBagIcon className="h-5 w-5 mr-2" />
