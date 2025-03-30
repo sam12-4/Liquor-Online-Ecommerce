@@ -2361,11 +2361,15 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
       
       if (note) {
         statusHistoryEntry.note = note;
+      } else {
+        statusHistoryEntry.note = `Status changed from ${previousStatus} to ${status} by admin`;
       }
       
       order.statusHistory.push(statusHistoryEntry);
     }
     
+    // Set flag to skip automatic history update
+    order._skipHistoryUpdate = true;
     await order.save();
     
     // Create notification for the user if registered

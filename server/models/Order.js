@@ -144,6 +144,11 @@ const orderSchema = new mongoose.Schema({
 
 // Add status change to history
 orderSchema.pre('save', function(next) {
+  // Skip if skipHistoryUpdate flag is set
+  if (this._skipHistoryUpdate) {
+    return next();
+  }
+  
   // If the document is new, add the initial status to history
   if (this.isNew) {
     this.statusHistory.push({
