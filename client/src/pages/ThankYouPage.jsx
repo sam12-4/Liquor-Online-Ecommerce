@@ -1,24 +1,36 @@
 import { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircleIcon, HomeIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { 
+  CheckCircleIcon, 
+  HomeIcon, 
+  ShoppingBagIcon,
+  ClockIcon,
+  TruckIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
 
 const ThankYouPage = () => {
   const location = useLocation();
-  const { orderNumber, email } = location.state || {};
+  const navigate = useNavigate();
+  const { orderNumber, email, orderDate, orderStatus } = location.state || {};
 
   useEffect(() => {
     document.title = 'Order Confirmation | Liquor Store';
     
     // Redirect if no order number
     if (!orderNumber) {
-      window.location.href = '/';
+      navigate('/');
     }
-  }, [orderNumber]);
+  }, [orderNumber, navigate]);
 
   if (!orderNumber) {
     return null;
   }
+
+  // Format date if available
+  const formattedDate = orderDate ? format(new Date(orderDate), 'MMM dd, yyyy, h:mm a') : 'Processing';
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -41,6 +53,20 @@ const ThankYouPage = () => {
             <span className="text-gray-600">Order Number:</span>
             <span className="font-semibold text-lg">{orderNumber}</span>
           </div>
+          
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-600">Order Date:</span>
+            <span className="font-medium">{formattedDate}</span>
+          </div>
+          
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-600">Status:</span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <ClockIcon className="h-3 w-3 mr-1" />
+              {orderStatus || 'Pending to be confirmed'}
+            </span>
+          </div>
+          
           <div className="h-px bg-gray-200 my-4"></div>
           <p className="text-gray-600 text-sm">
             We've sent a confirmation email to <span className="font-medium">{email}</span> with your order details.
@@ -63,6 +89,19 @@ const ThankYouPage = () => {
               <span>Remember: ID verification will be required at delivery for all alcohol purchases.</span>
             </li>
           </ul>
+        </div>
+
+        <div className="bg-blue-50 rounded-lg p-6 mb-8">
+          <h2 className="font-semibold text-lg mb-3 flex items-center">
+            <DocumentTextIcon className="h-5 w-5 mr-2 text-blue-600" />
+            Track Your Order
+          </h2>
+          <p className="text-gray-700 mb-3">
+            You can track your order status anytime using your Order ID: <strong>{orderNumber}</strong>
+          </p>
+          <p className="text-sm text-gray-600">
+            Save this number for future reference. You'll need it to check your order status or contact customer service.
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

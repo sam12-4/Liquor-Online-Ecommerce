@@ -15,7 +15,9 @@ const { authenticateUser } = require('./middleware/auth');
 const User = require('./models/User');
 const Cart = require('./models/Cart');
 const Wishlist = require('./models/Wishlist');
+const Order = require('./models/Order');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
+const { sendOrderConfirmation } = require('./utils/emailService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -2111,6 +2113,189 @@ app.delete('/api/wishlist', authenticateUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error clearing wishlist',
+      error: error.message
+    });
+  }
+});
+
+// Order API Endpoints
+// Create a new order (works for both logged-in and guest users)
+app.post('/api/orders', async (req, res) => {
+  try {
+    const orderData = req.body;
+    
+    // Validate required fields
+    if (!orderData.items || !orderData.items.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must contain at least one item'
+      });
+    }
+
+    if (!orderData.customerInfo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer information is required'
+      });
+    }
+
+    // Set userType based on authentication
+    if (req.cookies && req.cookies.userToken) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(req.cookies.userToken, JWT_SECRET);
+        // Set as registered user
+        orderData.userType = 'registered';
+        orderData.userId = decoded.id;
+      } catch (error) {
+        // Token invalid, treat as guest
+        orderData.userType = 'guest';
+      }
+    } else {
+      // No token, treat as guest
+      orderData.userType = 'guest';
+    }
+
+    // Create the order
+    const order = new Order(orderData);
+    await order.save();
+
+    // Send confirmation email
+    try {
+      await sendOrderConfirmation(order);
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+      // Continue with the order process even if email fails
+    }
+
+    // Clear the user's cart if they are authenticated
+    if (orderData.userType === 'registered' && orderData.userId) {
+      try {
+        await Cart.findOneAndUpdate(
+          { userId: orderData.userId },
+          { items: [] }
+        );
+      } catch (cartError) {
+        console.error('Failed to clear user cart after order:', cartError);
+        // Continue with the order process even if cart clearing fails
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      order: {
+        orderId: order.orderId,
+        status: order.status,
+        createdAt: order.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating order',
+      error: error.message
+    });
+  }
+});
+
+// Get order by tracking ID (no authentication required)
+app.get('/api/orders/track/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = await Order.findOne({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    // Return limited information for security
+    const orderInfo = {
+      orderId: order.orderId,
+      customerInfo: {
+        firstName: order.customerInfo.firstName,
+        lastName: order.customerInfo.lastName,
+        email: order.customerInfo.email
+      },
+      status: order.status,
+      statusHistory: order.statusHistory,
+      createdAt: order.createdAt,
+      shippingMethod: order.shippingMethod,
+      total: order.total
+    };
+    
+    res.status(200).json({
+      success: true,
+      order: orderInfo
+    });
+  } catch (error) {
+    console.error('Error tracking order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error tracking order',
+      error: error.message
+    });
+  }
+});
+
+// Get user's orders (requires authentication)
+app.get('/api/orders', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching orders',
+      error: error.message
+    });
+  }
+});
+
+// Get order details (requires authentication and must be the order owner)
+app.get('/api/orders/:orderId', authenticateUser, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+    
+    const order = await Order.findOne({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    // Check if the user is the owner of the order
+    if (order.userType === 'registered' && order.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to view this order'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    console.error('Error fetching order details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching order details',
       error: error.message
     });
   }

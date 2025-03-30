@@ -15,6 +15,9 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline';
 import { useCart } from '../context/CartContext';
+import { createOrder } from '../utils/orderService';
+import { useUserAuth } from '../contexts/UserAuthContext';
+import { toast } from 'react-toastify';
 
 // Banner image
 import bannerImg from '../assets/images/Slide1.jpg';
@@ -138,28 +141,71 @@ const CheckoutPage = () => {
   };
 
   // Place order
-  const placeOrder = () => {
+  const placeOrder = async () => {
     setLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      // Generate random order number
-      const orderNumber = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+    
+    try {
+      // Prepare order data
+      const orderData = {
+        customerInfo: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone,
+          address: {
+            street: customerInfo.address + (customerInfo.apartment ? `, ${customerInfo.apartment}` : ''),
+            city: customerInfo.city,
+            state: customerInfo.province,
+            zipCode: customerInfo.postalCode,
+            country: customerInfo.country
+          }
+        },
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          salePrice: item.salePrice,
+          quantity: item.quantity,
+          image: item.image,
+          category: item.category,
+          type: item.type,
+          brand: item.brand,
+          size: item.size,
+          abv: item.abv
+        })),
+        shippingMethod: shippingMethod,
+        shippingCost: shipping,
+        subtotal: subtotal,
+        tax: taxes,
+        total: total,
+        paymentMethod: paymentInfo.method
+      };
       
-      // Clear cart
-      clearCart();
+      // Submit order to API
+      const response = await createOrder(orderData);
       
-      // Set loading to false
+      if (response.success) {
+        // Clear cart
+        clearCart();
+        
+        // Navigate to thank you page with order info
+        navigate('/thank-you', { 
+          state: { 
+            orderNumber: response.order.orderId,
+            email: customerInfo.email,
+            orderDate: response.order.createdAt,
+            orderStatus: response.order.status
+          } 
+        });
+      } else {
+        throw new Error('Failed to create order');
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error('There was a problem placing your order. Please try again.');
+    } finally {
       setLoading(false);
-      
-      // Navigate to thank you page with order info
-      navigate('/thank-you', { 
-        state: { 
-          orderNumber: orderNumber,
-          email: customerInfo.email 
-        } 
-      });
-    }, 2000);
+    }
   };
 
   // Increment quantity
