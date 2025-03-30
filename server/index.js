@@ -17,6 +17,7 @@ const Cart = require('./models/Cart');
 const Wishlist = require('./models/Wishlist');
 const Order = require('./models/Order');
 const Notification = require('./models/Notification');
+const AdminNotification = require('./models/AdminNotification');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
 const { sendOrderConfirmation } = require('./utils/emailService');
 
@@ -2174,6 +2175,16 @@ app.post('/api/orders', async (req, res) => {
       await notification.save();
     }
 
+    // Create admin notification for any order
+    const adminNotification = new AdminNotification({
+      title: 'New Order Placed',
+      message: `A new order #${order.orderId} has been placed by ${orderData.customerInfo.firstName} ${orderData.customerInfo.lastName}.`,
+      type: 'order_placed',
+      orderId: order.orderId,
+      orderStatus: order.status
+    });
+    await adminNotification.save();
+
     // Send confirmation email
     try {
       await sendOrderConfirmation(order);
@@ -2372,6 +2383,17 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
       
       await notification.save();
     }
+
+    // Create admin notification for status change
+    const adminNotification = new AdminNotification({
+      title: 'Order Status Changed',
+      message: `Order #${order.orderId} status changed from ${previousStatus} to ${status}.`,
+      type: 'order_status_change',
+      orderId: order.orderId,
+      orderStatus: status
+    });
+    
+    await adminNotification.save();
     
     res.status(200).json({
       success: true,
@@ -2393,10 +2415,59 @@ app.put('/api/admin/orders/:orderId/status', authenticateAdmin, async (req, res)
   }
 });
 
+// Add admin order endpoints before the server listen statement
+
+// Get all orders for admin
+app.get('/api/admin/orders', authenticateAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching orders',
+      error: error.message
+    });
+  }
+});
+
+// Get single order details for admin
+app.get('/api/admin/orders/:orderId', authenticateAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = await Order.findOne({ orderId });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      order
+    });
+  } catch (error) {
+    console.error('Error fetching order details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching order details',
+      error: error.message
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  
+
   // Copy Excel file from client public folder if it doesn't exist
   const clientExcelPath = path.join(__dirname, '..', 'client', 'public', 'products.xlsx');
   if (fs.existsSync(clientExcelPath) && !fs.existsSync(EXCEL_FILE_PATH)) {
@@ -2504,6 +2575,89 @@ app.put('/api/notifications/read-all', authenticateUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error marking all notifications as read',
+      error: error.message
+    });
+  }
+});
+
+// Get admin notifications
+app.get('/api/admin/notifications', authenticateAdmin, async (req, res) => {
+  try {
+    const notifications = await AdminNotification.find()
+      .sort({ createdAt: -1 })
+      .limit(100);
+    
+    // Count unread notifications
+    const unreadCount = await AdminNotification.countDocuments({ read: false });
+    
+    res.status(200).json({
+      success: true,
+      notifications,
+      unreadCount
+    });
+  } catch (error) {
+    console.error('Error fetching admin notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching admin notifications',
+      error: error.message
+    });
+  }
+});
+
+// Mark admin notification as read
+app.put('/api/admin/notifications/:id/read', authenticateAdmin, async (req, res) => {
+  try {
+    const notificationId = req.params.id;
+    
+    const notification = await AdminNotification.findById(notificationId);
+    
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+    
+    notification.read = true;
+    await notification.save();
+    
+    // Count remaining unread notifications
+    const unreadCount = await AdminNotification.countDocuments({ read: false });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Notification marked as read',
+      unreadCount
+    });
+  } catch (error) {
+    console.error('Error updating admin notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating admin notification',
+      error: error.message
+    });
+  }
+});
+
+// Mark all admin notifications as read
+app.put('/api/admin/notifications/read-all', authenticateAdmin, async (req, res) => {
+  try {
+    await AdminNotification.updateMany(
+      { read: false },
+      { $set: { read: true } }
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: 'All notifications marked as read',
+      unreadCount: 0
+    });
+  } catch (error) {
+    console.error('Error marking all admin notifications as read:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error marking all admin notifications as read',
       error: error.message
     });
   }
