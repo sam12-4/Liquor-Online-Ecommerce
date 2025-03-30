@@ -171,3 +171,16 @@
     @apply text-sm sm:text-base md:text-lg;
   }
 }
+
+/* Toast container fixes - make sure it's visible above everything */
+.Toastify__toast-container {
+  z-index: 99999 !important;
+  position: fixed !important;
+  pointer-events: auto !important;
+}
+
+.Toastify__toast {
+  position: relative !important;
+  transform: none !important;
+  min-height: 64px;
+}
