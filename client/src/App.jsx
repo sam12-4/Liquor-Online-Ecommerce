@@ -72,6 +72,7 @@ const AdminNotificationsPage = lazy(() => import('./pages/admin/AdminNotificatio
 const AdminNotificationDetailPage = lazy(() => import('./pages/admin/AdminNotificationDetailPage'));
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'));
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage'));
+const DiscountCodesPage = lazy(() => import('./pages/admin/DiscountCodesPage'));
 
 // HOC to wrap pages with animation
 const withPageAnimation = (Component) => (props) => (
@@ -135,6 +136,7 @@ const AdminRoutes = () => (
       <Route path="notifications/:id" element={<AnimatedAdminNotificationDetailPage />} />
       <Route path="orders" element={<AnimatedAdminOrdersPage />} />
       <Route path="orders/:orderId" element={<AnimatedAdminOrderDetailPage />} />
+      <Route path="discount-codes" element={<DiscountCodesPage />} />
     </Route>
   </Routes>
 );

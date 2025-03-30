@@ -206,6 +206,12 @@ const AdminDashboard = () => {
               active={activeMenu === 'notifications'} 
             />
             <NavItem 
+              to="/admin/dashboard/discount-codes" 
+              icon={<TicketIcon className="h-5 w-5" />} 
+              label="Discount Codes" 
+              active={activeMenu === 'discount-codes'} 
+            />
+            <NavItem 
               to="/admin/dashboard/settings" 
               icon={<Cog6ToothIcon className="h-5 w-5" />} 
               label="Settings" 

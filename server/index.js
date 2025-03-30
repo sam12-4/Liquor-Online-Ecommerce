@@ -18,6 +18,7 @@ const Wishlist = require('./models/Wishlist');
 const Order = require('./models/Order');
 const Notification = require('./models/Notification');
 const AdminNotification = require('./models/AdminNotification');
+const DiscountCode = require('./models/DiscountCode');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
 const { sendOrderConfirmation } = require('./utils/emailService');
 
@@ -2662,6 +2663,305 @@ app.put('/api/admin/notifications/read-all', authenticateAdmin, async (req, res)
     res.status(500).json({
       success: false,
       message: 'Error marking all admin notifications as read',
+      error: error.message
+    });
+  }
+});
+
+// Discount Code API Endpoints
+
+// Get all discount codes (admin only)
+app.get('/api/admin/discount-codes', authenticateAdmin, async (req, res) => {
+  try {
+    const discountCodes = await DiscountCode.find().sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      discountCodes
+    });
+  } catch (error) {
+    console.error('Error fetching discount codes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching discount codes',
+      error: error.message
+    });
+  }
+});
+
+// Get single discount code (admin only)
+app.get('/api/admin/discount-codes/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const discountCode = await DiscountCode.findById(req.params.id);
+    
+    if (!discountCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'Discount code not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      discountCode
+    });
+  } catch (error) {
+    console.error('Error fetching discount code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching discount code',
+      error: error.message
+    });
+  }
+});
+
+// Create a new discount code (admin only)
+app.post('/api/admin/discount-codes', authenticateAdmin, async (req, res) => {
+  try {
+    const {
+      code,
+      type,
+      description,
+      discountType,
+      discountValue,
+      maxUses,
+      minPurchaseAmount,
+      startDate,
+      endDate,
+      isActive
+    } = req.body;
+    
+    // Validate required fields
+    if (!code || !description || !discountType || discountValue === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields are missing'
+      });
+    }
+    
+    // Check if code already exists (case insensitive)
+    const existingCode = await DiscountCode.findOne({ 
+      code: code.trim().toUpperCase() 
+    });
+    
+    if (existingCode) {
+      return res.status(409).json({
+        success: false,
+        message: 'Discount code already exists'
+      });
+    }
+    
+    // Create new discount code
+    const discountCode = new DiscountCode({
+      code: code.trim().toUpperCase(),
+      type: type || 'discount',
+      description,
+      discountType,
+      discountValue,
+      maxUses: maxUses !== undefined ? maxUses : null,
+      minPurchaseAmount: minPurchaseAmount || 0,
+      startDate: startDate || new Date(),
+      endDate: endDate || null,
+      isActive: isActive !== undefined ? isActive : true
+    });
+    
+    await discountCode.save();
+    
+    res.status(201).json({
+      success: true,
+      message: 'Discount code created successfully',
+      discountCode
+    });
+  } catch (error) {
+    console.error('Error creating discount code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating discount code',
+      error: error.message
+    });
+  }
+});
+
+// Update a discount code (admin only)
+app.put('/api/admin/discount-codes/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const {
+      code,
+      type,
+      description,
+      discountType,
+      discountValue,
+      maxUses,
+      minPurchaseAmount,
+      startDate,
+      endDate,
+      isActive,
+      currentUses
+    } = req.body;
+    
+    const discountCode = await DiscountCode.findById(req.params.id);
+    
+    if (!discountCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'Discount code not found'
+      });
+    }
+    
+    // If code is being changed, check if new code already exists
+    if (code && code.trim().toUpperCase() !== discountCode.code) {
+      const existingCode = await DiscountCode.findOne({ 
+        code: code.trim().toUpperCase(),
+        _id: { $ne: req.params.id }
+      });
+      
+      if (existingCode) {
+        return res.status(409).json({
+          success: false,
+          message: 'Discount code already exists'
+        });
+      }
+      
+      discountCode.code = code.trim().toUpperCase();
+    }
+    
+    // Update fields if provided
+    if (type !== undefined) discountCode.type = type;
+    if (description) discountCode.description = description;
+    if (discountType) discountCode.discountType = discountType;
+    if (discountValue !== undefined) discountCode.discountValue = discountValue;
+    if (maxUses !== undefined) discountCode.maxUses = maxUses;
+    if (currentUses !== undefined) discountCode.currentUses = currentUses;
+    if (minPurchaseAmount !== undefined) discountCode.minPurchaseAmount = minPurchaseAmount;
+    if (startDate) discountCode.startDate = startDate;
+    if (endDate !== undefined) discountCode.endDate = endDate;
+    if (isActive !== undefined) discountCode.isActive = isActive;
+    
+    await discountCode.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Discount code updated successfully',
+      discountCode
+    });
+  } catch (error) {
+    console.error('Error updating discount code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating discount code',
+      error: error.message
+    });
+  }
+});
+
+// Delete a discount code (admin only)
+app.delete('/api/admin/discount-codes/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const discountCode = await DiscountCode.findById(req.params.id);
+    
+    if (!discountCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'Discount code not found'
+      });
+    }
+    
+    await DiscountCode.deleteOne({ _id: req.params.id });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Discount code deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting discount code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting discount code',
+      error: error.message
+    });
+  }
+});
+
+// Validate a discount code (for users)
+app.post('/api/discount-codes/validate', async (req, res) => {
+  try {
+    const { code, subtotal } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Discount code is required'
+      });
+    }
+    
+    const discountCode = await DiscountCode.findOne({ 
+      code: code.trim().toUpperCase() 
+    });
+    
+    if (!discountCode) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid discount code'
+      });
+    }
+    
+    // Check if code is valid
+    if (!discountCode.isValid()) {
+      let message = 'This discount code is no longer valid';
+      
+      if (discountCode.maxUses !== null && discountCode.currentUses >= discountCode.maxUses) {
+        message = 'This discount code has reached its maximum number of uses';
+      } else if (discountCode.endDate && new Date() > discountCode.endDate) {
+        message = 'This discount code has expired';
+      } else if (discountCode.startDate && new Date() < discountCode.startDate) {
+        message = 'This discount code is not yet active';
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message
+      });
+    }
+    
+    // Check minimum purchase amount
+    if (subtotal && discountCode.minPurchaseAmount > 0 && subtotal < discountCode.minPurchaseAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `This discount code requires a minimum purchase of $${discountCode.minPurchaseAmount.toFixed(2)}`
+      });
+    }
+    
+    // Calculate discount amount
+    let discountAmount = 0;
+    if (subtotal) {
+      if (discountCode.discountType === 'percentage') {
+        discountAmount = (subtotal * discountCode.discountValue) / 100;
+      } else {
+        discountAmount = discountCode.discountValue;
+        // Don't allow discount to exceed subtotal
+        if (discountAmount > subtotal) {
+          discountAmount = subtotal;
+        }
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      discountCode: {
+        _id: discountCode._id,
+        code: discountCode.code,
+        type: discountCode.type,
+        discountType: discountCode.discountType,
+        discountValue: discountCode.discountValue,
+        minPurchaseAmount: discountCode.minPurchaseAmount
+      },
+      discountAmount: subtotal ? discountAmount : undefined
+    });
+  } catch (error) {
+    console.error('Error validating discount code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error validating discount code',
       error: error.message
     });
   }
