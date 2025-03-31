@@ -84,9 +84,20 @@ discountCodeSchema.methods.isValid = function() {
   // Check if code has reached max uses
   if (this.maxUses !== null && this.currentUses >= this.maxUses) return false;
   
-  // Check if code is within date range
-  if (this.startDate && now < this.startDate) return false;
-  if (this.endDate && now > this.endDate) return false;
+  // Check if code is within date range (comparing dates without time)
+  if (this.startDate) {
+    const startDate = new Date(this.startDate);
+    startDate.setHours(0, 0, 0, 0);
+    const nowDate = new Date(now);
+    nowDate.setHours(0, 0, 0, 0);
+    if (nowDate < startDate) return false;
+  }
+  
+  if (this.endDate) {
+    const endDate = new Date(this.endDate);
+    endDate.setHours(23, 59, 59, 999);
+    if (now > endDate) return false;
+  }
   
   return true;
 };
