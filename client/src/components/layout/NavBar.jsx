@@ -18,6 +18,7 @@ import { getFilters } from '../../data/productLoader';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useUserAuth } from '../../contexts/UserAuthContext';
 import NotificationBell from './NotificationBell';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Import styles
 import '../../styles/navbar.css';
@@ -43,7 +44,8 @@ const NavBar = () => {
     login: userLogin, 
     logout: userLogout,
     error: userAuthError, 
-    loading: userAuthLoading 
+    loading: userAuthLoading,
+    loginWithGoogle
   } = useUserAuth();
 
   // Get cart state from context
@@ -171,6 +173,23 @@ const NavBar = () => {
   // Handle logout
   const handleLogout = async () => {
     await userLogout();
+  };
+
+  // Handle Google login success
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      const success = await loginWithGoogle(credentialResponse);
+      if (success) {
+        setLoginFormOpen(false);
+      }
+    } catch (err) {
+      console.error('Google login error:', err);
+    }
+  };
+
+  // Handle Google login error
+  const handleGoogleLoginError = () => {
+    console.error('Google login failed');
   };
 
   return (
@@ -462,6 +481,23 @@ const NavBar = () => {
                           {userAuthLoading ? 'LOGGING IN...' : 'LOGIN'}
                         </button>
                       </form>
+
+                      <div className="my-4 relative flex items-center justify-center">
+                        <div className="border-t border-gray-300 absolute w-full"></div>
+                        <span className="bg-white px-4 relative text-gray-500 text-sm">OR</span>
+                      </div>
+                      
+                      <div className="flex justify-center">
+                        <GoogleLogin
+                          onSuccess={handleGoogleLoginSuccess}
+                          onError={handleGoogleLoginError}
+                          useOneTap
+                          theme="outline"
+                          shape="rectangular"
+                          text="signin_with"
+                          width="280"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -493,7 +529,7 @@ const NavBar = () => {
                       </svg>
                     </button>
                     
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg hidden group-hover:block z-50 border border-gray-200">
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg hidden group-hover:block z-[100] border border-gray-200 rounded-md">
                       <div className="py-2">
                         <Link to="/notifications" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
                           My Notifications

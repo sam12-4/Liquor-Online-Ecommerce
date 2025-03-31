@@ -86,6 +86,9 @@ const WishlistPage = () => {
       ) : (
         <>
           <AnimatedSection delay={0.2}>
+            <div className="container px-4">
+              <h1 className="text-3xl font-bold text-dark mb-2">My Wishlist</h1>
+            
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-600">{wishlistItems.length} item(s) in your wishlist</p>
               <button 
@@ -95,6 +98,7 @@ const WishlistPage = () => {
                 <TrashIcon className="h-4 w-4" />
                 Clear Wishlist
               </button>
+            </div>
             </div>
           </AnimatedSection>
 
@@ -126,7 +130,7 @@ const WishlistPage = () => {
                         {item.name}
                       </Link>
                       <p className="text-gray-500 text-sm mb-1">{item.category}</p>
-                      <div className="font-bold text-primary">
+                      <div className="font-bold text-[#c0a483]">
                         ${(item.salePrice || item.price).toFixed(2)}
                       </div>
                       <div className="flex items-center mt-2 space-x-2">
@@ -138,7 +142,7 @@ const WishlistPage = () => {
                           Add to Cart
                         </button>
                         <button 
-                          onClick={() => handleRemove(item.id)}
+                          onClick={() => handleRemove(item.productId)}
                           className="text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-dark py-1 px-2 rounded transition"
                         >
                           <XMarkIcon className="h-3.5 w-3.5" />
