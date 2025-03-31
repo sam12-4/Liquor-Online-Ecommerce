@@ -151,7 +151,7 @@ const ProductDetailPage = () => {
           <p className="text-gray-600 mb-6">
             The product you're looking for doesn't exist or has been removed.
           </p>
-          <Link to="/shop" className="btn btn-primary">
+          <Link to="/shop" className="btn btn-primary bg-[#c0a483] hover:bg-black">
             Browse Products
         </Link>
         </div>

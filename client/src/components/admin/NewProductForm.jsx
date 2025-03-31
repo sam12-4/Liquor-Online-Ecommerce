@@ -20,14 +20,16 @@ const HIDDEN_FIELDS = [
 
 // Fields with specific input types
 const FIELD_TYPES = {
-  // Number fields
+  // Number fields with decimals
   price: 'number',
   regular_price: 'number',
   cost_price: 'number',
   sale_price: 'number',
+  alcohol: 'number',
+  
+  // Integer number fields (no decimals)
   stock: 'number',
   stock_quantity: 'number',
-  alcohol: 'number',
   
   // Text areas
   description: 'textarea',
@@ -200,6 +202,23 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
+    // Special handling for stock fields - ensure integer values only
+    if (name === 'stock' || name === 'stock_quantity') {
+      const intValue = value ? Math.floor(parseFloat(value)) : '';
+      setFormData(prev => ({
+        ...prev,
+        [name]: intValue
+      }));
+      
+      // Sync related stock field
+      if (name === 'stock') {
+        setFormData(prev => ({ ...prev, stock_quantity: intValue }));
+      } else if (name === 'stock_quantity') {
+        setFormData(prev => ({ ...prev, stock: intValue }));
+      }
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' 
@@ -226,10 +245,6 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       setFormData(prev => ({ ...prev, type: value, 'tax:type': value }));
     } else if (name === 'tax:type') {
       setFormData(prev => ({ ...prev, type: value, 'tax:product_type': value }));
-    } else if (name === 'stock') {
-      setFormData(prev => ({ ...prev, stock_quantity: value }));
-    } else if (name === 'stock_quantity') {
-      setFormData(prev => ({ ...prev, stock: value }));
     } else if (name === 'price') {
       setFormData(prev => ({ ...prev, regular_price: value }));
     } else if (name === 'regular_price') {
@@ -734,6 +749,16 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
     const isRequired = ['name', 'post_title', 'price', 'regular_price', 'size'].includes(field) || 
       (['stock', 'stock_quantity'].includes(field) && formData.stock_status !== 'outofstock');
     
+    // Set step value based on field type
+    let stepValue;
+    if (['stock', 'stock_quantity'].includes(field)) {
+      stepValue = "1"; // Integer step for stock fields
+    } else if (type === 'number') {
+      stepValue = "0.01"; // Default decimal step for other number fields
+    } else {
+      stepValue = undefined;
+    }
+    
     return (
       <div key={field} className={field === 'name' || field === 'post_title' ? 'md:col-span-2' : ''}>
         <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
@@ -747,7 +772,7 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           value={formData[field] || ''}
           onChange={handleInputChange}
           required={isRequired}
-          step={type === 'number' ? '0.01' : undefined}
+          step={stepValue}
           min={type === 'number' ? '0' : undefined}
           disabled={field === 'stock' && formData.stock_status === 'outofstock'}
           className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
@@ -888,25 +913,31 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
                         Size <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="text"
+                        type="number"
                         id="size"
                         name="size"
                         value={formData.size || ''}
                         onChange={(e) => {
-                          // Allow only numbers and decimal points
-                          const newValue = e.target.value.replace(/[^0-9.]/g, '');
+                          // Get the numeric value
+                          const newValue = e.target.value;
                           setFormData(prev => ({
                             ...prev,
                             size: newValue,
                             'attribute:pa_product-volume': newValue ? `${newValue}ML` : ''
                           }));
                         }}
-                        placeholder="e.g., 750 (numeric only)"
                         required
-                        pattern="[0-9]*\.?[0-9]*"
+                        min="0"
+                        step="1" 
+                        onKeyDown={(e) => {
+                          // Prevent decimal point input
+                          if (e.key === '.' || e.key === ',') {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter size in ml"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Enter numeric value only (e.g. 750) - "ml" will be added automatically</p>
                     </div>
                     <div>
                       <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">

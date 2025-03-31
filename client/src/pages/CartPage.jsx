@@ -68,7 +68,7 @@ const CartPage = () => {
             <p className="text-gray-600 mb-6">
               Looks like you haven't added any items to your cart yet.
             </p>
-            <Link to="/shop" className="btn btn-primary">
+            <Link to="/shop" className="btn btn-primary bg-[#c0a483] hover:bg-black">
               Browse Products
             </Link>
           </div>
@@ -100,10 +100,10 @@ const CartPage = () => {
             >
               {cartItems.map(item => (
                 <motion.div 
-                  key={item.id}
+                  key={item.productId}
                   variants={itemVariants}
                   className={`bg-white rounded-lg shadow-sm overflow-hidden transition-all duration-300 ${
-                    removingItemId === item.id ? 'opacity-50 scale-95' : ''
+                    removingItemId === item.productId ? 'opacity-50 scale-95' : ''
                   }`}
                 >
                   <div className="p-4 flex items-center">
@@ -115,7 +115,7 @@ const CartPage = () => {
                       />
                     </div>
                     <div className="flex-1 mr-4">
-                      <Link to={`/product/${item.id}`} className="font-medium text-dark hover:text-[#c0a483]">
+                      <Link to={`/product/${item.productId}`} className="font-medium text-dark hover:text-[#c0a483]">
                         {item.name}
                       </Link>
                       <p className="text-sm text-gray-500">{item.category}</p>
@@ -125,14 +125,14 @@ const CartPage = () => {
                     </div>
                     <div className="flex items-center border border-gray-300 rounded-md mr-6">
                       <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
                         className="px-2 py-1 hover:bg-gray-100 transition-colors"
                       >
                         <MinusIcon className="h-4 w-4" />
                       </button>
                       <div className="w-10 text-center py-1 font-medium">{item.quantity}</div>
                       <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
                         className="px-2 py-1 hover:bg-gray-100 transition-colors"
                       >
                         <PlusIcon className="h-4 w-4" />
@@ -142,7 +142,7 @@ const CartPage = () => {
                       ${((item.salePrice || item.price) * item.quantity).toFixed(2)}
                     </div>
                     <button 
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => handleRemoveItem(item.productId)}
                       className="ml-4 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <XMarkIcon className="h-5 w-5" />

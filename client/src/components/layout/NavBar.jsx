@@ -785,7 +785,7 @@ const NavBar = () => {
                 <>
                   <div className="divide-y divide-gray-100">
                     {cartItems.map((item) => (
-                      <div key={item.id} className="flex p-4 gap-4">
+                      <div key={item.productId} className="flex p-4 gap-4">
                         <img 
                           src={item.image} 
                           alt={item.name}
@@ -796,14 +796,14 @@ const NavBar = () => {
                           <div className="flex justify-between items-center mt-1">
                             <div className="flex items-center mt-2">
                               <button 
-                                onClick={() => updateCartItemQuantity(item.id, Math.max(1, item.quantity - 1))}
+                                onClick={() => updateCartItemQuantity(item.productId, Math.max(1, item.quantity - 1))}
                                 className="w-8 h-8 flex items-center justify-center border border-gray-300 hover:bg-gray-100"
                               >
                                 -
                               </button>
                               <span className="w-10 text-center">{item.quantity}</span>
                               <button 
-                                onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateCartItemQuantity(item.productId, item.quantity + 1)}
                                 className="w-8 h-8 flex items-center justify-center border border-gray-300 hover:bg-gray-100"
                               >
                                 +
@@ -812,7 +812,7 @@ const NavBar = () => {
                             <div className="text-right">
                               <div className="font-medium">${((item.salePrice || item.price) * item.quantity).toFixed(2)}</div>
                               <button 
-                                onClick={() => removeFromCart(item.id)}
+                                onClick={() => removeFromCart(item.productId)}
                                 className="text-xs text-[#c0a483] hover:underline mt-1">
                                 Remove
                               </button>

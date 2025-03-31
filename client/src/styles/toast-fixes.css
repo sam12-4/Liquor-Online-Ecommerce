@@ -49,7 +49,7 @@
 /* Fix specific issues in admin dashboard */
 .Toastify__toast {
   min-height: 64px !important;
-  max-height: 64px !important;
+  max-height: fit-content !important;
   overflow: hidden !important;
 }
 
