@@ -2237,8 +2237,30 @@ app.post('/api/orders', async (req, res) => {
         // Update stock status if needed
         if (newStock === 0) {
           products[index].stock_status = 'outofstock';
+          
+          // Create admin notification for out of stock product
+          const outOfStockNotification = new AdminNotification({
+            title: 'Product Out of Stock',
+            message: `${products[index].name || products[index].post_title} is now out of stock.`,
+            type: 'out_of_stock',
+            orderId: order.orderId,
+            productId: products[index].id || products[index].ID,
+            orderStatus: order.status
+          });
+          await outOfStockNotification.save();
         } else if (newStock < 5) {
           products[index].stock_status = 'lowstock';
+          
+          // Create admin notification for low stock product
+          const lowStockNotification = new AdminNotification({
+            title: 'Product Low Stock',
+            message: `${products[index].name || products[index].post_title} is running low on stock (${newStock} remaining).`,
+            type: 'low_stock',
+            orderId: order.orderId,
+            productId: products[index].id || products[index].ID,
+            orderStatus: order.status
+          });
+          await lowStockNotification.save();
         } else {
           products[index].stock_status = 'instock';
         }

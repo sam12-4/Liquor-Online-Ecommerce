@@ -56,6 +56,14 @@ const AdminNotificationsPage = () => {
       return <DocumentCheckIcon className="h-5 w-5 text-indigo-600" />;
     }
     
+    if (type === 'out_of_stock') {
+      return <ExclamationCircleIcon className="h-5 w-5 text-red-600" />;
+    }
+    
+    if (type === 'low_stock') {
+      return <ExclamationCircleIcon className="h-5 w-5 text-yellow-500" />;
+    }
+    
     if (type === 'order_status_change') {
       switch (orderStatus) {
         case 'pending to be confirmed':

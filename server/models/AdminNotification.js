@@ -11,12 +11,16 @@ const adminNotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['order_placed', 'order_status_change'],
+    enum: ['order_placed', 'order_status_change', 'out_of_stock', 'low_stock'],
     required: true
   },
   orderId: {
     type: String,
     required: true
+  },
+  productId: {
+    type: String,
+    required: false
   },
   orderStatus: {
     type: String,

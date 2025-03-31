@@ -72,6 +72,14 @@ const AdminNotificationDetailPage = () => {
       return <DocumentCheckIcon className="h-6 w-6 text-indigo-600" />;
     }
     
+    if (type === 'out_of_stock') {
+      return <ExclamationCircleIcon className="h-6 w-6 text-red-600" />;
+    }
+    
+    if (type === 'low_stock') {
+      return <ExclamationCircleIcon className="h-6 w-6 text-yellow-500" />;
+    }
+    
     if (type === 'order_status_change') {
       switch (orderStatus) {
         case 'pending to be confirmed':
@@ -97,6 +105,14 @@ const AdminNotificationDetailPage = () => {
   const handleViewOrder = () => {
     if (notification?.orderId) {
       navigate(`/admin/dashboard/orders/${notification.orderId}`);
+    }
+  };
+  
+  const handleViewProduct = () => {
+    if (notification?.productId) {
+      navigate(`/admin/dashboard/products`, { 
+        state: { productIdToEdit: notification.productId } 
+      });
     }
   };
 
@@ -168,9 +184,16 @@ const AdminNotificationDetailPage = () => {
                 </div>
               )}
               
+              {notification.productId && ['out_of_stock', 'low_stock'].includes(notification.type) && (
+                <div className="sm:col-span-1">
+                  <dt className="text-sm font-medium text-gray-500">Product ID</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{notification.productId}</dd>
+                </div>
+              )}
+              
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Type</dt>
-                <dd className="mt-1 text-sm text-gray-900">{notification.type.replace('_', ' ')}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{notification.type.replace(/_/g, ' ')}</dd>
               </div>
               
               <div className="sm:col-span-1">
@@ -197,6 +220,18 @@ const AdminNotificationDetailPage = () => {
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   View Order Details
+                </button>
+              </div>
+            )}
+            
+            {notification.productId && ['out_of_stock', 'low_stock'].includes(notification.type) && (
+              <div className="mt-6 flex">
+                <button
+                  type="button"
+                  onClick={handleViewProduct}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  View Product Details
                 </button>
               </div>
             )}

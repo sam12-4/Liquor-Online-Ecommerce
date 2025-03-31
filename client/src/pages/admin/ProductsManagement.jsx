@@ -13,6 +13,7 @@ import { useProducts } from '../../context/ProductContext';
 import { useSocket } from '../../context/SocketContext';
 import NewProductForm from '../../components/admin/NewProductForm';
 import { deleteProduct } from '../../data/productLoader';
+import { useLocation } from 'react-router-dom';
 
 const ProductsManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,8 @@ const ProductsManagement = () => {
   const { products, refreshProducts } = useProducts();
   // Get socket connection status
   const { connected } = useSocket();
+  // Use location to get state from navigation
+  const location = useLocation();
   
   // Load products when component mounts
   useEffect(() => {
@@ -41,6 +44,13 @@ const ProductsManagement = () => {
         if (mounted) {
           setError(null);
           setLoading(false);
+          
+          // Check for productIdToEdit in location state
+          if (location.state?.productIdToEdit) {
+            handleEdit(location.state.productIdToEdit);
+            // Clear the state to prevent reopening on refresh
+            window.history.replaceState({}, document.title);
+          }
         }
       } catch (err) {
         console.error('Error loading products:', err);
@@ -56,7 +66,7 @@ const ProductsManagement = () => {
     return () => {
       mounted = false;
     };
-  }, []); // Remove refreshProducts from dependencies
+  }, [location]); // Add location to the dependencies
   
   // Listen for stock update events
   useEffect(() => {
