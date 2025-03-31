@@ -212,7 +212,7 @@ const AdminNotificationDetailPage = () => {
               </div>
             </dl>
             
-            {notification.orderId && (
+            {/* {notification.orderId && (
               <div className="mt-6 flex">
                 <button
                   type="button"
@@ -222,7 +222,7 @@ const AdminNotificationDetailPage = () => {
                   View Order Details
                 </button>
               </div>
-            )}
+            )} */}
             
             {notification.productId && ['out_of_stock', 'low_stock'].includes(notification.type) && (
               <div className="mt-6 flex">
