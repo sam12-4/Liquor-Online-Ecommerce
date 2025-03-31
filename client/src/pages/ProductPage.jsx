@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useProducts } from '../context/ProductContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/product/ProductCard';
+import { toast } from 'react-toastify';
 
 const ProductPage = () => {
   const { id: productSlug } = useParams();
@@ -69,7 +70,12 @@ const ProductPage = () => {
   }, [productSlug, products]);
 
   const incrementQuantity = () => {
-    setQuantity(prev => prev + 1);
+    if (product && quantity < product.stock) {
+      setQuantity(prev => prev + 1);
+    } else if (product) {
+      // Show alert when trying to add more than available stock
+      toast.warning(`Sorry, only ${product.stock} units available in stock.`);
+    }
   };
 
   const decrementQuantity = () => {
@@ -90,12 +96,26 @@ const ProductPage = () => {
 
   const handleAddToCart = () => {
     if (product) {
+      // Check if product is in stock before adding to cart
+      if (product.stock <= 0) {
+        // Alert the user that the product is out of stock
+        alert('Sorry, this product is currently out of stock.');
+        return;
+      }
+      
       addToCart(product, quantity);
     }
   };
 
   const handleBuyNow = () => {
     if (product) {
+      // Check if product is in stock before proceeding to checkout
+      if (product.stock <= 0) {
+        // Alert the user that the product is out of stock
+        alert('Sorry, this product is currently out of stock.');
+        return;
+      }
+      
       addToCart(product, quantity);
       navigate('/checkout');
     }
@@ -213,7 +233,10 @@ const ProductPage = () => {
               <div className="flex border border-gray-300">
                 <button
                   onClick={decrementQuantity}
-                  className="w-10 h-10 flex items-center justify-center border-r border-gray-300 text-gray-600 hover:bg-gray-100"
+                  className={`w-10 h-10 flex items-center justify-center border-r border-gray-300 text-gray-600 ${
+                    product.stock > 0 ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'
+                  }`}
+                  disabled={product.stock <= 0}
                 >
                   <MinusIcon className="h-4 w-4" />
                 </button>
@@ -221,11 +244,14 @@ const ProductPage = () => {
                   type="text"
                   value={quantity}
                   readOnly
-                  className="w-12 h-10 text-center focus:outline-none"
+                  className={`w-12 h-10 text-center focus:outline-none ${product.stock <= 0 ? 'bg-gray-100' : ''}`}
                 />
                 <button
                   onClick={incrementQuantity}
-                  className="w-10 h-10 flex items-center justify-center border-l border-gray-300 text-gray-600 hover:bg-gray-100"
+                  className={`w-10 h-10 flex items-center justify-center border-l border-gray-300 text-gray-600 ${
+                    product.stock > 0 ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'
+                  }`}
+                  disabled={product.stock <= 0}
                 >
                   <PlusIcon className="h-4 w-4" />
                 </button>
@@ -233,9 +259,14 @@ const ProductPage = () => {
 
               <button
                 onClick={handleAddToCart}
-                className="py-2 px-8 w-[70%] bg-dark text-white hover:bg-[#c0a483] uppercase font-semibold transition-colors"
+                className={`py-2 px-8 w-[70%] ${
+                  product.stock > 0 
+                    ? 'bg-dark hover:bg-[#c0a483]' 
+                    : 'bg-gray-400 cursor-not-allowed'
+                } text-white uppercase font-semibold transition-colors`}
+                disabled={product.stock <= 0}
               >
-                Add to Cart
+                {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
               </button>
 
               <button
@@ -252,9 +283,14 @@ const ProductPage = () => {
 
             <button
               onClick={handleBuyNow}
-              className="w-full py-3 bg-[#c0a483] text-white uppercase font-semibold mb-6 hover:bg-[#a38b6c]"
+              className={`w-full py-3 ${
+                product.stock > 0 
+                  ? 'bg-[#c0a483] hover:bg-[#a38b6c]' 
+                  : 'bg-gray-400 cursor-not-allowed'
+              } text-white uppercase font-semibold mb-6`}
+              disabled={product.stock <= 0}
             >
-              Buy Now
+              {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
             </button>
 
             <div className="border-t border-gray-200 pt-6">

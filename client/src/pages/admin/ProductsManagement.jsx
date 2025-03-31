@@ -10,6 +10,7 @@ import {
   ChevronUpDownIcon
 } from '@heroicons/react/24/outline';
 import { useProducts } from '../../context/ProductContext';
+import { useSocket } from '../../context/SocketContext';
 import NewProductForm from '../../components/admin/NewProductForm';
 import { deleteProduct } from '../../data/productLoader';
 
@@ -23,9 +24,12 @@ const ProductsManagement = () => {
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [stockUpdated, setStockUpdated] = useState(false);
   
   // Use the ProductContext to get products
   const { products, refreshProducts } = useProducts();
+  // Get socket connection status
+  const { connected } = useSocket();
   
   // Load products when component mounts
   useEffect(() => {
@@ -53,6 +57,29 @@ const ProductsManagement = () => {
       mounted = false;
     };
   }, []); // Remove refreshProducts from dependencies
+  
+  // Listen for stock update events
+  useEffect(() => {
+    // Set up a listener for the socket.io stockUpdated event
+    const handleStockUpdate = () => {
+      setStockUpdated(true);
+      
+      // Show visual indicator for 3 seconds
+      setTimeout(() => {
+        setStockUpdated(false);
+      }, 3000);
+    };
+    
+    // Get the socket.io client from the window object
+    const socket = window.io?.connect();
+    if (socket) {
+      socket.on('stockUpdated', handleStockUpdate);
+      
+      return () => {
+        socket.off('stockUpdated', handleStockUpdate);
+      };
+    }
+  }, []);
   
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -233,7 +260,64 @@ const ProductsManagement = () => {
   }
   
   return (
-    <div className="space-y-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
+        
+        <div className="flex items-center">
+          {stockUpdated && (
+            <div className="mr-4 px-3 py-1 bg-green-100 text-green-800 rounded-full animate-pulse flex items-center">
+              <span className="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
+              Stock updated in real-time
+            </div>
+          )}
+          
+          {connected ? (
+            <div className="mr-4 px-3 py-1 bg-green-100 text-green-800 rounded-full flex items-center">
+              <span className="h-2 w-2 bg-green-500 rounded-full mr-2"></span>
+              Real-time connected
+            </div>
+          ) : (
+            <div className="mr-4 px-3 py-1 bg-gray-100 text-gray-800 rounded-full flex items-center">
+              <span className="h-2 w-2 bg-gray-500 rounded-full mr-2"></span>
+              Real-time disconnected
+            </div>
+          )}
+          
+          <button
+            onClick={handleAddNew}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-700 transition-colors"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Product
+          </button>
+        </div>
+      </div>
+      
+      <div className="mb-6">
+        <div className="flex gap-4">
+          <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products by name, ID, or category..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+          <button 
+            onClick={() => refreshProducts(true)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Refresh
+          </button>
+        </div>
+      </div>
+      
       {showNewProductForm && !isEditing && (
         <NewProductForm 
           onClose={() => setShowNewProductForm(false)} 
@@ -249,43 +333,6 @@ const ProductsManagement = () => {
           isEditing={true}
         />
       )}
-    
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Product Management</h1>
-        <button
-          onClick={handleAddNew}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Product
-        </button>
-      </div>
-      
-      {/* Search and filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex space-x-2">
-            <button
-              className="inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <ArrowDownTrayIcon className="h-5 w-5 mr-2 text-gray-500" />
-              Export
-            </button>
-          </div>
-        </div>
-      </div>
       
       {/* Products table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

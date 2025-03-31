@@ -17,6 +17,7 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { UserAuthProvider } from './contexts/UserAuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { AdminNotificationProvider } from './contexts/AdminNotificationContext';
+import { SocketProvider } from './context/SocketContext';
 
 // Components
 import Layout from './components/layout/Layout';
@@ -154,59 +155,61 @@ function App() {
               <NotificationProvider>
                 <AdminNotificationProvider>
                   <ProductProvider>
-                    <TaxonomyProvider>
-                      <CartProvider>
-                        <WishlistProvider>
-                          <ScrollToTop />
-                          <Suspense fallback={<Loader />}>
-                            <Layout>
-                              <Routes>
-                                <Route path="/" element={<AnimatedHomePage />} />
-                                <Route path="/products" element={<AnimatedProductsPage />} />
-                                <Route path="/product/:id" element={<AnimatedProductPage />} />
-                                <Route path="/cart" element={<AnimatedCartPage />} />
-                                <Route path="/checkout" element={<AnimatedCheckoutPage />} />
-                                <Route path="/thank-you" element={<AnimatedThankYouPage />} />
-                                <Route path="/account" element={<AnimatedAccountPage />} />
-                                
-                                {/* Protected customer route - admins cannot access */}
-                                <Route 
-                                  path="/my-account" 
-                                  element={<ProtectedCustomerRoute element={<AnimatedMyAccountPage />} />}
-                                />
-                                
-                                <Route path="/wishlist" element={<AnimatedWishlistPage />} />
-                                <Route path="/about" element={<AnimatedAboutPage />} />
-                                <Route path="/contact" element={<AnimatedContactPage />} />
-                                <Route path="/shop" element={<AnimatedShopPage />} />
-                                <Route path="/login" element={<AnimatedLoginPage />} />
-                                <Route path="/register" element={<AnimatedRegisterPage />} />
-                                
-                                {/* Admin Routes */}
-                                <Route path="/admin" element={<AnimatedAdminLoginPage />} />
-                                <Route path="/admin/dashboard/*" element={<ProtectedAdminRoute element={<AdminRoutes />} />} />
-                                
-                                <Route path="/favorites" element={<AnimatedFavoritesPage />} />
-                                <Route path="/profile" element={<AnimatedProfilePage />} />
-                                <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
-                                <Route path="/search" element={<AnimatedSearchResultsPage />} />
-                                <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
-                                <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
-                                <Route path="/notifications" element={<AnimatedNotificationsPage />} />
-                                <Route path="/notifications/:id" element={<AnimatedNotificationDetailPage />} />
-                                <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
-                                <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
-                                <Route path="/finance" element={<AnimatedFinancePage />} />
-                                <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
-                                <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
-                                <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
-                                <Route path="*" element={<AnimatedNotFoundPage />} />
-                              </Routes>
-                            </Layout>
-                          </Suspense>
-                        </WishlistProvider>
-                      </CartProvider>
-                    </TaxonomyProvider>
+                    <SocketProvider>
+                      <TaxonomyProvider>
+                        <CartProvider>
+                          <WishlistProvider>
+                            <ScrollToTop />
+                            <Suspense fallback={<Loader />}>
+                              <Layout>
+                                <Routes>
+                                  <Route path="/" element={<AnimatedHomePage />} />
+                                  <Route path="/products" element={<AnimatedProductsPage />} />
+                                  <Route path="/product/:id" element={<AnimatedProductPage />} />
+                                  <Route path="/cart" element={<AnimatedCartPage />} />
+                                  <Route path="/checkout" element={<AnimatedCheckoutPage />} />
+                                  <Route path="/thank-you" element={<AnimatedThankYouPage />} />
+                                  <Route path="/account" element={<AnimatedAccountPage />} />
+                                  
+                                  {/* Protected customer route - admins cannot access */}
+                                  <Route 
+                                    path="/my-account" 
+                                    element={<ProtectedCustomerRoute element={<AnimatedMyAccountPage />} />}
+                                  />
+                                  
+                                  <Route path="/wishlist" element={<AnimatedWishlistPage />} />
+                                  <Route path="/about" element={<AnimatedAboutPage />} />
+                                  <Route path="/contact" element={<AnimatedContactPage />} />
+                                  <Route path="/shop" element={<AnimatedShopPage />} />
+                                  <Route path="/login" element={<AnimatedLoginPage />} />
+                                  <Route path="/register" element={<AnimatedRegisterPage />} />
+                                  
+                                  {/* Admin Routes */}
+                                  <Route path="/admin" element={<AnimatedAdminLoginPage />} />
+                                  <Route path="/admin/dashboard/*" element={<ProtectedAdminRoute element={<AdminRoutes />} />} />
+                                  
+                                  <Route path="/favorites" element={<AnimatedFavoritesPage />} />
+                                  <Route path="/profile" element={<AnimatedProfilePage />} />
+                                  <Route path="/excel-demo" element={<AnimatedExcelDemoPage />} />
+                                  <Route path="/search" element={<AnimatedSearchResultsPage />} />
+                                  <Route path="/contact-faq" element={<AnimatedContactFaqPage />} />
+                                  <Route path="/track-order" element={<AnimatedTrackOrderPage />} />
+                                  <Route path="/notifications" element={<AnimatedNotificationsPage />} />
+                                  <Route path="/notifications/:id" element={<AnimatedNotificationDetailPage />} />
+                                  <Route path="/returns-refunds" element={<AnimatedReturnsRefundsPage />} />
+                                  <Route path="/shipping-delivery" element={<AnimatedShippingDeliveryPage />} />
+                                  <Route path="/finance" element={<AnimatedFinancePage />} />
+                                  <Route path="/special-orders" element={<AnimatedSpecialOrdersPage />} />
+                                  <Route path="/private-commercial" element={<AnimatedPrivateCommercialPage />} />
+                                  <Route path="/free-draw" element={<AnimatedFreeDrawPage />} />
+                                  <Route path="*" element={<AnimatedNotFoundPage />} />
+                                </Routes>
+                              </Layout>
+                            </Suspense>
+                          </WishlistProvider>
+                        </CartProvider>
+                      </TaxonomyProvider>
+                    </SocketProvider>
                   </ProductProvider>
                 </AdminNotificationProvider>
               </NotificationProvider>

@@ -14,12 +14,18 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   margin-bottom: 1rem !important;
   min-height: 64px !important;
+  max-height: 64px !important; /* Enforce consistent height */
   padding: 0.75rem 1rem !important;
+  overflow: hidden !important; /* Prevent content from expanding */
 }
 
 .toast-body-custom {
   padding: 0 !important;
   margin: 0 !important;
+  height: auto !important;
+  max-height: 48px !important; /* Ensure consistent body height */
+  overflow: hidden !important;
+  line-height: 1.5 !important;
 }
 
 /* Override any transform that might affect the stacking context */
@@ -38,6 +44,20 @@
 .Toastify__toast-container,
 .Toastify__toast {
   pointer-events: auto !important;
+}
+
+/* Fix specific issues in admin dashboard */
+.Toastify__toast {
+  min-height: 64px !important;
+  max-height: 64px !important;
+  overflow: hidden !important;
+}
+
+.Toastify__toast-body {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-height: 48px !important;
+  overflow: hidden !important;
 }
 
 /* Fix any portal-related issues */

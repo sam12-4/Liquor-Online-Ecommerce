@@ -21,9 +21,29 @@ const AdminNotification = require('./models/AdminNotification');
 const DiscountCode = require('./models/DiscountCode');
 const { validateRegistration, validateLogin } = require('./middleware/validators');
 const { sendOrderConfirmation } = require('./utils/emailService');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Create HTTP server and Socket.io instance
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    credentials: true
+  }
+});
+
+// Socket.io connection handler
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 
 // Connect to MongoDB
 connectDB()
@@ -164,6 +184,10 @@ async function writeProductsToExcel(products) {
     XLSX.writeFile(workbook, EXCEL_FILE_PATH);
     
     console.log(`Excel file updated with ${products.length} products`);
+    
+    // Emit the updated products to all connected clients
+    io.emit('stockUpdated', products);
+    
     return true;
   } catch (error) {
     console.error('Error writing to Excel file:', error);
@@ -2142,6 +2166,32 @@ app.post('/api/orders', async (req, res) => {
       });
     }
 
+    // Check stock availability before creating order
+    const products = readProductsFromExcel();
+    for (const item of orderData.items) {
+      const product = products.find(p => {
+        const pIdStr = p.id ? String(p.id).trim() : '';
+        const pIDStr = p.ID ? String(p.ID).trim() : '';
+        const prodIdStr = String(item.productId).trim();
+        return pIdStr === prodIdStr || pIDStr === prodIdStr;
+      });
+
+      if (!product) {
+        return res.status(400).json({
+          success: false,
+          message: `Product ${item.name} not found`
+        });
+      }
+
+      const currentStock = parseInt(product.stock || product.stock_quantity || 0);
+      if (currentStock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Sorry, ${item.name} is out of stock. Only ${currentStock} units available.`
+        });
+      }
+    }
+
     // Set userType based on authentication
     if (req.cookies && req.cookies.userToken) {
       try {
@@ -2162,6 +2212,41 @@ app.post('/api/orders', async (req, res) => {
     // Create the order
     const order = new Order(orderData);
     await order.save();
+
+    // Update stock for each item in the order
+    for (const item of orderData.items) {
+      // Get current products
+      const products = readProductsFromExcel();
+      
+      // Find the product index
+      const index = products.findIndex(p => {
+        const pIdStr = p.id ? String(p.id).trim() : '';
+        const pIDStr = p.ID ? String(p.ID).trim() : '';
+        const prodIdStr = String(item.productId).trim();
+        return pIdStr === prodIdStr || pIDStr === prodIdStr;
+      });
+
+      if (index !== -1) {
+        // Update stock
+        const currentStock = parseInt(products[index].stock || products[index].stock_quantity || 0);
+        const newStock = Math.max(0, currentStock - item.quantity);
+        
+        products[index].stock = newStock;
+        products[index].stock_quantity = newStock;
+        
+        // Update stock status if needed
+        if (newStock === 0) {
+          products[index].stock_status = 'outofstock';
+        } else if (newStock < 5) {
+          products[index].stock_status = 'lowstock';
+        } else {
+          products[index].stock_status = 'instock';
+        }
+        
+        // Write updated products back to Excel
+        await writeProductsToExcel(products);
+      }
+    }
 
     // If a discount code was used, increment its usage count
     if (orderData.discountCode) {
@@ -2491,7 +2576,7 @@ app.get('/api/admin/orders/:orderId', authenticateAdmin, async (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 
   // Copy Excel file from client public folder if it doesn't exist

@@ -238,6 +238,13 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       setFormData(prev => ({ ...prev, post_excerpt: value }));
     } else if (name === 'post_excerpt') {
       setFormData(prev => ({ ...prev, short_description: value }));
+    } else if (name === 'stock_status' && value === 'outofstock') {
+      // Set stock and stock_quantity to 0 when status is out of stock
+      setFormData(prev => ({ 
+        ...prev, 
+        stock: 0,
+        stock_quantity: 0
+      }));
     }
   };
 
@@ -321,8 +328,9 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
       return false;
     }
     
-    if (!formData.stock && !formData.stock_quantity) {
-      setError('Stock quantity is required');
+    // Only require stock quantity if not out of stock
+    if (formData.stock_status !== 'outofstock' && !formData.stock && !formData.stock_quantity) {
+      setError('Stock quantity is required for in-stock products');
       return false;
     }
     
@@ -723,7 +731,8 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
     
     // Default to regular input
     const type = getInputType(field);
-    const isRequired = ['name', 'post_title', 'price', 'regular_price', 'stock', 'stock_quantity', 'size'].includes(field);
+    const isRequired = ['name', 'post_title', 'price', 'regular_price', 'size'].includes(field) || 
+      (['stock', 'stock_quantity'].includes(field) && formData.stock_status !== 'outofstock');
     
     return (
       <div key={field} className={field === 'name' || field === 'post_title' ? 'md:col-span-2' : ''}>
@@ -740,7 +749,10 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
           required={isRequired}
           step={type === 'number' ? '0.01' : undefined}
           min={type === 'number' ? '0' : undefined}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+          disabled={field === 'stock' && formData.stock_status === 'outofstock'}
+          className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+            field === 'stock' && formData.stock_status === 'outofstock' ? 'bg-gray-100' : ''
+          }`}
         />
       </div>
     );

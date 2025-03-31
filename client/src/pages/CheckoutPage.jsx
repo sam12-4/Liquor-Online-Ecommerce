@@ -18,6 +18,7 @@ import { useCart } from '../context/CartContext';
 import { createOrder } from '../utils/orderService';
 import { useUserAuth } from '../contexts/UserAuthContext';
 import { toast } from 'react-toastify';
+import { useProducts } from '../context/ProductContext';
 
 // Banner image
 import bannerImg from '../assets/images/Slide1.jpg';
@@ -25,6 +26,7 @@ import bannerImg from '../assets/images/Slide1.jpg';
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, updateCartItemQuantity, removeFromCart, clearCart } = useCart();
+  const { products } = useProducts();
   const [step, setStep] = useState(1); // 1: Information, 2: Shipping, 3: Payment
   const [loading, setLoading] = useState(false);
   const [couponCode, setCouponCode] = useState('');
@@ -317,13 +319,66 @@ const CheckoutPage = () => {
     }
   };
 
+  // Verify stock levels for all cart items
+  const verifyCartItemsStock = () => {
+    if (!products || products.length === 0) {
+      // If products haven't loaded yet, we can't verify
+      return { valid: false, errorMessage: "Product data not available. Please try again." };
+    }
+
+    // Check each cart item against current stock
+    for (const cartItem of cartItems) {
+      // Find the product in the updated products list
+      const currentProduct = products.find(p => p.id == cartItem.productId);
+      
+      if (!currentProduct) {
+        return { 
+          valid: false, 
+          errorMessage: `Product "${cartItem.name}" is no longer available.` 
+        };
+      }
+      
+      if (!currentProduct.stock || currentProduct.stock <= 0) {
+        return { 
+          valid: false, 
+          errorMessage: `Sorry, "${cartItem.name}" is now out of stock.` 
+        };
+      }
+      
+      if (cartItem.quantity > currentProduct.stock) {
+        return { 
+          valid: false, 
+          errorMessage: `Sorry, only ${currentProduct.stock} units of "${cartItem.name}" are available.` 
+        };
+      }
+    }
+    
+    return { valid: true };
+  };
+
   // Place order
   const placeOrder = async () => {
-    setLoading(true);
-    setIsProcessingOrder(true); // Set processing flag to prevent redirect
+    if (isProcessingOrder) return; // Prevent multiple clicks
+    setIsProcessingOrder(true);
     
     try {
+      setLoading(true);
+      
+      // Verify all items are in stock before placing order
+      const stockVerification = verifyCartItemsStock();
+      if (!stockVerification.valid) {
+        toast.error(stockVerification.errorMessage);
+        setIsProcessingOrder(false);
+        setLoading(false);
+        return;
+      }
+
       // Prepare order data
+      const subtotal = cartTotal;
+      const shipping = shippingMethod === 'express' ? 15 : 5;
+      const taxes = Math.round(subtotal * 0.13 * 100) / 100; // 13% tax rate
+      const total = Math.round((subtotal + shipping + taxes - discount) * 100) / 100;
+      
       const orderData = {
         customerInfo: {
           firstName: customerInfo.firstName,
@@ -347,6 +402,7 @@ const CheckoutPage = () => {
           image: item.image,
           category: item.category,
           type: item.type,
+          country: item.country,
           brand: item.brand,
           size: item.size,
           abv: item.abv

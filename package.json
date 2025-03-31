@@ -15,5 +15,9 @@
   "devDependencies": {
     "concurrently": "^8.0.1",
     "copyfiles": "^2.4.1"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   }
-} 
+}

@@ -197,6 +197,12 @@ export const CartProvider = ({ children }) => {
   };
 
   const addToCart = async (product, quantity = 1) => {
+    // Validate stock before adding to cart
+    if (!product.stock || product.stock <= 0) {
+      toast.error(`Sorry, ${product.name} is out of stock.`);
+      return;
+    }
+
     // Update state first for immediate UI feedback
     setCartItems(prevItems => {
       // Check if item already exists in cart
@@ -204,14 +210,39 @@ export const CartProvider = ({ children }) => {
       
       let updatedItems;
       if (existingItemIndex !== -1) {
-        // Update quantity of existing item
-        updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + quantity
-        };
-        toast.success(`Updated ${product.name} quantity in cart`);
+        // Calculate new quantity
+        const currentQuantity = prevItems[existingItemIndex].quantity;
+        const newQuantity = currentQuantity + quantity;
+        
+        // Check if new quantity exceeds available stock
+        if (newQuantity > product.stock) {
+          toast.warning(`Cannot add more than ${product.stock} units of ${product.name} to cart.`);
+          
+          // Update to max available stock if currently below
+          if (currentQuantity < product.stock) {
+            updatedItems = [...prevItems];
+            updatedItems[existingItemIndex] = {
+              ...updatedItems[existingItemIndex],
+              quantity: product.stock
+            };
+            toast.info(`Updated ${product.name} quantity to maximum available stock (${product.stock}).`);
+          } else {
+            // No change if already at max
+            return prevItems;
+          }
+        } else {
+          // Update quantity of existing item (within stock limits)
+          updatedItems = [...prevItems];
+          updatedItems[existingItemIndex] = {
+            ...updatedItems[existingItemIndex],
+            quantity: newQuantity
+          };
+          toast.success(`Updated ${product.name} quantity in cart`);
+        }
       } else {
+        // Ensure we don't add more than available stock
+        const itemQuantity = Math.min(quantity, product.stock);
+        
         // Add new item to cart
         const newItem = {
           productId: product.id,
@@ -219,17 +250,23 @@ export const CartProvider = ({ children }) => {
           price: product.price,
           salePrice: product.salePrice,
           image: product.image,
-          quantity,
+          quantity: itemQuantity,
           category: product.category,
           type: product.type,
           country: product.country,
           brand: product.brand,
           varietal: product.varietal,
           size: product.size,
-          abv: product.abv
+          abv: product.abv,
+          stock: product.stock // Store stock info for later validation
         };
         updatedItems = [...prevItems, newItem];
-        toast.success(`Added ${product.name} to cart`);
+        
+        if (itemQuantity < quantity) {
+          toast.warning(`Added ${itemQuantity} of ${product.name} to cart (maximum available stock).`);
+        } else {
+          toast.success(`Added ${product.name} to cart`);
+        }
       }
       
       // If user is authenticated, save to database
@@ -246,7 +283,7 @@ export const CartProvider = ({ children }) => {
             price: product.price,
             salePrice: product.salePrice,
             image: product.image,
-            quantity,
+            quantity: Math.min(quantity, product.stock), // Ensure quantity doesn't exceed stock
             category: product.category,
             type: product.type,
             country: product.country,
@@ -273,6 +310,39 @@ export const CartProvider = ({ children }) => {
     
     // Update state first for immediate UI feedback
     setCartItems(prevItems => {
+      // Find the current item to check its stock
+      const currentItem = prevItems.find(item => item.productId === productId);
+      
+      if (!currentItem) return prevItems;
+      
+      // Check if requested quantity exceeds stock
+      if (currentItem.stock && quantity > currentItem.stock) {
+        toast.warning(`Cannot add more than ${currentItem.stock} units of ${currentItem.name} to cart.`);
+        
+        // Update to maximum available stock
+        const updatedItems = prevItems.map(item => 
+          item.productId === productId ? { ...item, quantity: currentItem.stock } : item
+        );
+        
+        // If user is authenticated, save to database
+        if (isAuthenticated) {
+          fetch(`${API_URL}/cart/items/${productId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ quantity: currentItem.stock })
+          }).catch(error => {
+            console.error('Error updating cart item:', error);
+            toast.error('Failed to update cart item');
+          });
+        }
+        
+        return updatedItems;
+      }
+      
+      // Normal update (within stock limits)
       const updatedItems = prevItems.map(item => 
         item.productId === productId ? { ...item, quantity } : item
       );
