@@ -2172,6 +2172,15 @@ app.post('/api/orders', async (req, res) => {
       if (discountCode) {
         discountCode.currentUses += 1;
         await discountCode.save();
+        
+        // Set the discount percentage based on the discount code type
+        if (discountCode.discountType === 'percentage') {
+          order.discountPercentage = discountCode.discountValue;
+        } else {
+          // For fixed amount discounts, calculate the percentage
+          order.discountPercentage = (orderData.discount / orderData.subtotal) * 100;
+        }
+        await order.save();
       }
     }
 

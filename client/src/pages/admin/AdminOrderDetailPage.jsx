@@ -278,6 +278,18 @@ const AdminOrderDetailPage = () => {
                 <span className="text-sm text-gray-500">Subtotal</span>
                 <span className="text-sm font-medium">${order.subtotal.toFixed(2)}</span>
               </div>
+              {order.discount > 0 && (
+                <>
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-gray-500">Discount ({order.discountPercentage}%)</span>
+                    <span className="text-sm font-medium text-green-600">-${order.discount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-gray-500">Discount Code</span>
+                    <span className="text-sm font-medium">{order.discountCode}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between py-2">
                 <span className="text-sm text-gray-500">Shipping</span>
                 <span className="text-sm font-medium">${order.shippingCost.toFixed(2)}</span>

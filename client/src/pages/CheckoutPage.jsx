@@ -966,7 +966,7 @@ const CheckoutPage = () => {
                 <div className="flex items-center">
                   <input
                     type="text"
-                    placeholder="Discount code"
+                    placeholder="Discount/Referral code"
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                     disabled={couponApplied || applyingCoupon}

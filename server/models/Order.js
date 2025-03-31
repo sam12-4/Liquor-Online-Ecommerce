@@ -118,6 +118,10 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  discountPercentage: {
+    type: Number,
+    default: 0
+  },
   discountCode: {
     type: String,
     default: null
