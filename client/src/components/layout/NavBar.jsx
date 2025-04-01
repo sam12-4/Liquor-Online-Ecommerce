@@ -65,6 +65,12 @@ const NavBar = () => {
 
   // State for wine types to be displayed
   const [wineTypes, setWineTypes] = useState([]);
+  // State for wine-specific brands to be displayed
+  const [wineBrands, setWineBrands] = useState([]);
+  // State for wine-specific countries to be displayed
+  const [wineCountries, setWineCountries] = useState([]);
+  // State for wine-specific varietals to be displayed
+  const [wineVarietals, setWineVarietals] = useState([]);
   // State for spirit types to be displayed
   const [spiritTypes, setSpiritTypes] = useState([]);
   // State for beer types to be displayed
@@ -150,12 +156,23 @@ const NavBar = () => {
       const wineTypesList = [...new Set(wineProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
       const spiritTypesList = [...new Set(spiritProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
       const beerTypesList = [...new Set(beerProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
+      
+      // Extract wine-specific brands, countries, and varietals
+      const wineBrandsList = [...new Set(wineProducts.map(product => product.brand || product['tax:product_brand']).filter(Boolean))];
+      const wineCountriesList = [...new Set(wineProducts.map(product => product.country || product['tax:Country']).filter(Boolean))];
+      const wineVarietalsList = [...new Set(wineProducts.map(product => product.varietal || product['tax:varietal']).filter(Boolean))];
 
       console.log('Extracted wine types from products:', wineTypesList);
+      console.log('Extracted wine brands from products:', wineBrandsList);
+      console.log('Extracted wine countries from products:', wineCountriesList);
+      console.log('Extracted wine varietals from products:', wineVarietalsList);
       console.log('Extracted spirit types from products:', spiritTypesList);
       console.log('Extracted beer types from products:', beerTypesList);
 
       setWineTypes(wineTypesList);
+      setWineBrands(wineBrandsList);
+      setWineCountries(wineCountriesList);
+      setWineVarietals(wineVarietalsList);
       setSpiritTypes(spiritTypesList);
       setBeerTypes(beerTypesList);
     }
@@ -329,8 +346,8 @@ const NavBar = () => {
                     <div>
                       <h3>VARIETALS</h3>
                       <ul>
-                        {varietals && varietals.length > 0 ? (
-                          varietals
+                        {wineVarietals && wineVarietals.length > 0 ? (
+                          wineVarietals
                             .filter(varietal => varietal && varietal.trim() !== '')
                             .slice(0, 15) 
                             .map((varietal, index) => (
@@ -358,8 +375,8 @@ const NavBar = () => {
                     <div>
                       <h3>BRANDS</h3>
                       <ul>
-                        {brands && brands.length > 0 ? (
-                          brands
+                        {wineBrands && wineBrands.length > 0 ? (
+                          wineBrands
                             .filter(brand => brand && brand.trim() !== '')
                             .slice(0, 15)
                             .map((brand, index) => (
@@ -372,11 +389,11 @@ const NavBar = () => {
                         ) : (
                           // Fallback for when no brands are loaded
                           <>
-                            <li><Link to="/shop?brand=josh-cellars">josh cellars</Link></li>
-                            <li><Link to="/shop?brand=barefoot">barefoot</Link></li>
-                            <li><Link to="/shop?brand=yellow-tail">yellow tail</Link></li>
-                            <li><Link to="/shop?brand=kendall-jackson">kendall jackson</Link></li>
-                            <li><Link to="/shop?brand=robert-mondavi">robert mondavi</Link></li>
+                            <li><Link to="/shop?category=wine&brand=josh-cellars">josh cellars</Link></li>
+                            <li><Link to="/shop?category=wine&brand=barefoot">barefoot</Link></li>
+                            <li><Link to="/shop?category=wine&brand=yellow-tail">yellow tail</Link></li>
+                            <li><Link to="/shop?category=wine&brand=kendall-jackson">kendall jackson</Link></li>
+                            <li><Link to="/shop?category=wine&brand=robert-mondavi">robert mondavi</Link></li>
                           </>
                         )}
                         <li><Link to="/shop?category=wine">shop all brands</Link></li>
@@ -385,8 +402,8 @@ const NavBar = () => {
                     <div>
                       <h3>COUNTRY</h3>
                       <ul>
-                        {countries && countries.length > 0 ? (
-                          countries
+                        {wineCountries && wineCountries.length > 0 ? (
+                          wineCountries
                             .filter(country => country && country.trim() !== '')
                             .slice(0, 13)
                             .map((country, index) => (

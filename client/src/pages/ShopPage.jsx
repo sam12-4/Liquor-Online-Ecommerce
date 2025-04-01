@@ -177,7 +177,13 @@ const ShopPage = () => {
   // Toggle a filter on/off
   const toggleFilter = (filterType, value) => {
     if (isFilterActive(filterType, value)) {
-      removeFilter(filterType, value);
+      // Remove using case-insensitive matching
+      setActiveFilters({
+        ...activeFilters,
+        [filterType]: activeFilters[filterType].filter(filter => 
+          filter.toLowerCase() !== value.toLowerCase()
+        )
+      });
     } else {
       addFilter(filterType, value);
     }

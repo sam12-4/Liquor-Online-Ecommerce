@@ -785,8 +785,8 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   };
 
   return (
-    <div className="admin-page fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="admin-page fixed inset-0 z-[99999] overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 ">
+      <div className="relative bg-white px-6 pb-5 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 font-serif uppercase">
