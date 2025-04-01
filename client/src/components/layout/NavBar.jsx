@@ -19,6 +19,8 @@ import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useUserAuth } from '../../contexts/UserAuthContext';
 import NotificationBell from './NotificationBell';
 import { GoogleLogin } from '@react-oauth/google';
+import { useTaxonomy } from '../../context/TaxonomyContext';
+import { useProducts } from '../../context/ProductContext';
 
 // Import styles
 import '../../styles/navbar.css';
@@ -32,6 +34,7 @@ const NavBar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [loginFormOpen, setLoginFormOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   // Check if admin is logged in
@@ -53,6 +56,19 @@ const NavBar = () => {
 
   // Get wishlist state from context
   const { wishlistItems, wishlistCount, removeFromWishlist, isInWishlist } = useWishlist();
+
+  // Get taxonomy data for dynamic dropdown menus
+  const { categories, brands, countries, varietals, types, loading: taxonomyLoading } = useTaxonomy();
+
+  // Get products from ProductContext - same as in ShopPage
+  const { products, loading: productsLoading } = useProducts();
+
+  // State for wine types to be displayed
+  const [wineTypes, setWineTypes] = useState([]);
+  // State for spirit types to be displayed
+  const [spiritTypes, setSpiritTypes] = useState([]);
+  // State for beer types to be displayed
+  const [beerTypes, setBeerTypes] = useState([]);
 
   const [filters, setFilters] = useState({ categories: [], brands: [] });
   
@@ -82,13 +98,17 @@ const NavBar = () => {
       if (loginFormOpen && !event.target.closest('.login-form') && !event.target.closest('.login-trigger')) {
         setLoginFormOpen(false);
       }
+
+      if (profileDropdownOpen && !event.target.closest('.profile-dropdown') && !event.target.closest('.profile-trigger')) {
+        setProfileDropdownOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [mobileMenuOpen, loginFormOpen]);
+  }, [mobileMenuOpen, loginFormOpen, profileDropdownOpen]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -102,6 +122,57 @@ const NavBar = () => {
       document.body.style.overflow = 'auto';
     };
   }, [mobileMenuOpen]);
+
+  // Extract wine, spirit, and beer types directly from product data
+  // This exactly matches what ShopPage does
+  useEffect(() => {
+    if (!productsLoading && products && products.length > 0) {
+      console.log('Extracting types from products data:', products.length);
+      
+      // Filter products by category
+      const wineProducts = products.filter(product => {
+        const category = product.category || product['tax:product_cat'];
+        return category && category.toLowerCase() === 'wine';
+      });
+
+      const spiritProducts = products.filter(product => {
+        const category = product.category || product['tax:product_cat'];
+        return category && category.toLowerCase() === 'spirits';
+      });
+
+      const beerProducts = products.filter(product => {
+        const category = product.category || product['tax:product_cat'];
+        return category && category.toLowerCase() === 'beer';
+      });
+
+      // Extract unique types from filtered products
+      // This is exactly how ShopPage does it
+      const wineTypesList = [...new Set(wineProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
+      const spiritTypesList = [...new Set(spiritProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
+      const beerTypesList = [...new Set(beerProducts.map(product => product.type || product['tax:type']).filter(Boolean))];
+
+      console.log('Extracted wine types from products:', wineTypesList);
+      console.log('Extracted spirit types from products:', spiritTypesList);
+      console.log('Extracted beer types from products:', beerTypesList);
+
+      setWineTypes(wineTypesList);
+      setSpiritTypes(spiritTypesList);
+      setBeerTypes(beerTypesList);
+    }
+  }, [products, productsLoading]);
+
+  // First, add a useEffect to debug the taxonomy data (add after other useEffects)
+  useEffect(() => {
+    // Log taxonomy data when it changes
+    if (!taxonomyLoading) {
+      console.log('Taxonomy data loaded:', {
+        types: types?.length || 0,
+        varietals: varietals?.length || 0,
+        brands: brands?.length || 0,
+        countries: countries?.length || 0
+      });
+    }
+  }, [taxonomyLoading, types, varietals, brands, countries]);
 
   const toggleNav = () => {
     setIsOpen(!isOpen);
@@ -117,6 +188,10 @@ const NavBar = () => {
   
   const toggleLoginForm = () => {
     setLoginFormOpen(!loginFormOpen);
+  };
+
+  const toggleProfileDropdown = () => {
+    setProfileDropdownOpen(!profileDropdownOpen);
   };
 
   const handleSearch = (e) => {
@@ -224,71 +299,113 @@ const NavBar = () => {
                     <div>
                       <h3>TYPES</h3>
                       <ul>
-                        <li><Link to="/shop?category=wine&type=red">red wines</Link></li>
-                        <li><Link to="/shop?category=wine&type=white">white wines</Link></li>
-                        <li><Link to="/shop?category=wine&type=sparkling">sparkling</Link></li>
-                        <li><Link to="/shop?category=wine&type=rose">rose</Link></li>
-                        <li><Link to="/shop?category=wine&type=champagne">champagne</Link></li>
-                        <li><Link to="/shop?category=wine&type=sake">sake</Link></li>
-                        <li><Link to="/shop?category=wine&type=port">port</Link></li>
+                        {wineTypes && wineTypes.length > 0 ? (
+                          wineTypes
+                            // Sort alphabetically just like shop page
+                            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+                            .slice(0, 20)
+                            .map((type, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=wine&type=${encodeURIComponent(type.toLowerCase())}`}>
+                                  {type.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          // Fallback for when no types are loaded
+                          <>
+                            <li><Link to="/shop?category=wine&type=red">red wines</Link></li>
+                            <li><Link to="/shop?category=wine&type=white">white wines</Link></li>
+                            <li><Link to="/shop?category=wine&type=sparkling">sparkling</Link></li>
+                            <li><Link to="/shop?category=wine&type=rose">rose</Link></li>
+                            <li><Link to="/shop?category=wine&type=champagne">champagne</Link></li>
+                            <li><Link to="/shop?category=wine&type=sake">sake</Link></li>
+                            <li><Link to="/shop?category=wine&type=port">port</Link></li>
+                          </>
+                        )}
                         <li><Link to="/shop?category=wine">shop all types</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h3>VARIETALS</h3>
                       <ul>
-                        <li><Link to="/shop?category=wine&varietal=cabernet">cabernet sauvignon</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=malbec">malbec</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=merlot">merlot</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=shiraz">shiraz</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=syrah">syrah</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=pinot-noir">pinot noir</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=zinfandel">zinfandel</Link></li>
-                        <li><Link to="/shop?category=wine&type=rose">rose & blush</Link></li>
-                        <li><Link to="/shop?category=wine&type=white&varietal=blend">white blend</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=chardonnay">chardonnay</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=sauvignon-blanc">sauvignon blanc</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=pinot-grigio">pinot grigio/pinot gris</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=riesling">riesling</Link></li>
-                        <li><Link to="/shop?category=wine&varietal=moscato">muscat/moscato</Link></li>
+                        {varietals && varietals.length > 0 ? (
+                          varietals
+                            .filter(varietal => varietal && varietal.trim() !== '')
+                            .slice(0, 15) 
+                            .map((varietal, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=wine&varietal=${encodeURIComponent(varietal.toLowerCase())}`}>
+                                  {varietal.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          // Fallback for when no varietals are loaded
+                          <>
+                            <li><Link to="/shop?category=wine&varietal=cabernet">cabernet sauvignon</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=malbec">malbec</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=merlot">merlot</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=shiraz">shiraz</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=pinot-noir">pinot noir</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=chardonnay">chardonnay</Link></li>
+                            <li><Link to="/shop?category=wine&varietal=sauvignon-blanc">sauvignon blanc</Link></li>
+                          </>
+                        )}
                         <li><Link to="/shop?category=wine">shop all varietals</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h3>BRANDS</h3>
                       <ul>
-                        <li><Link to="/shop?category=wine&brand=cabernet">cabernet sauvignon</Link></li>
-                        <li><Link to="/shop?category=wine&brand=malbec">malbec</Link></li>
-                        <li><Link to="/shop?category=wine&brand=merlot">merlot</Link></li>
-                        <li><Link to="/shop?category=wine&brand=shiraz">shiraz</Link></li>
-                        <li><Link to="/shop?category=wine&brand=syrah">syrah</Link></li>
-                        <li><Link to="/shop?category=wine&brand=pinot-noir">pinot noir</Link></li>
-                        <li><Link to="/shop?category=wine&brand=zinfandel">zinfandel</Link></li>
-                        <li><Link to="/shop?category=wine&type=rose">rose & blush</Link></li>
-                        <li><Link to="/shop?category=wine&type=white&brand=blend">white blend</Link></li>
-                        <li><Link to="/shop?category=wine&brand=chardonnay">chardonnay</Link></li>
-                        <li><Link to="/shop?category=wine&brand=sauvignon-blanc">sauvignon blanc</Link></li>
-                        <li><Link to="/shop?category=wine&brand=pinot-grigio">pinot grigio/pinot gris</Link></li>
-                        <li><Link to="/shop?category=wine&brand=riesling">riesling</Link></li>
-                        <li><Link to="/shop?category=wine&brand=moscato">muscat/moscato</Link></li>
-                        <li><Link to="/shop?category=wine">shop all varietals</Link></li>
+                        {brands && brands.length > 0 ? (
+                          brands
+                            .filter(brand => brand && brand.trim() !== '')
+                            .slice(0, 15)
+                            .map((brand, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=wine&brand=${encodeURIComponent(brand.toLowerCase())}`}>
+                                  {brand.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          // Fallback for when no brands are loaded
+                          <>
+                            <li><Link to="/shop?brand=josh-cellars">josh cellars</Link></li>
+                            <li><Link to="/shop?brand=barefoot">barefoot</Link></li>
+                            <li><Link to="/shop?brand=yellow-tail">yellow tail</Link></li>
+                            <li><Link to="/shop?brand=kendall-jackson">kendall jackson</Link></li>
+                            <li><Link to="/shop?brand=robert-mondavi">robert mondavi</Link></li>
+                          </>
+                        )}
+                        <li><Link to="/shop?category=wine">shop all brands</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h3>COUNTRY</h3>
                       <ul>
-                        <li><Link to="/shop?category=wine&country=united-states">united states</Link></li>
-                        <li><Link to="/shop?category=wine&country=canada">canada</Link></li>
-                        <li><Link to="/shop?category=wine&country=australia">australia</Link></li>
-                        <li><Link to="/shop?category=wine&country=italy">italy</Link></li>
-                        <li><Link to="/shop?category=wine&country=france">france</Link></li>
-                        <li><Link to="/shop?category=wine&country=new-zealand">new zealand</Link></li>
-                        <li><Link to="/shop?category=wine&country=argentina">argentina</Link></li>
-                        <li><Link to="/shop?category=wine&country=chile">chile</Link></li>
-                        <li><Link to="/shop?category=wine&country=germany">germany</Link></li>
-                        <li><Link to="/shop?category=wine&country=japan">japan</Link></li>
-                        <li><Link to="/shop?category=wine&country=portugal">portugal</Link></li>
-                        <li><Link to="/shop?category=wine&country=spain">spain</Link></li>
+                        {countries && countries.length > 0 ? (
+                          countries
+                            .filter(country => country && country.trim() !== '')
+                            .slice(0, 13)
+                            .map((country, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=wine&country=${encodeURIComponent(country.toLowerCase())}`}>
+                                  {country.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          // Fallback for when no countries are loaded
+                          <>
+                            <li><Link to="/shop?category=wine&country=united-states">united states</Link></li>
+                            <li><Link to="/shop?category=wine&country=france">france</Link></li>
+                            <li><Link to="/shop?category=wine&country=italy">italy</Link></li>
+                            <li><Link to="/shop?category=wine&country=spain">spain</Link></li>
+                            <li><Link to="/shop?category=wine&country=australia">australia</Link></li>
+                          </>
+                        )}
                         <li><Link to="/shop?category=wine">shop all countries</Link></li>
                       </ul>
                     </div>
@@ -307,24 +424,54 @@ const NavBar = () => {
                     <div className='bg-white'>
                       <h3>TYPES</h3>
                       <ul>
-                        <li><Link to="/shop?category=spirits&type=whiskey">whiskey</Link></li>
-                        <li><Link to="/shop?category=spirits&type=vodka">vodka</Link></li>
-                        <li><Link to="/shop?category=spirits&type=gin">gin</Link></li>
-                        <li><Link to="/shop?category=spirits&type=rum">rum</Link></li>
-                        <li><Link to="/shop?category=spirits&type=tequila">tequila</Link></li>
-                        <li><Link to="/shop?category=spirits&type=cognac">cognac</Link></li>
+                        {spiritTypes && spiritTypes.length > 0 ? (
+                          spiritTypes
+                            // Sort alphabetically just like shop page
+                            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+                            .slice(0, 20)
+                            .map((type, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=spirits&type=${encodeURIComponent(type.toLowerCase())}`}>
+                                  {type.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          <>
+                            <li><Link to="/shop?category=spirits&type=whiskey">whiskey</Link></li>
+                            <li><Link to="/shop?category=spirits&type=vodka">vodka</Link></li>
+                            <li><Link to="/shop?category=spirits&type=gin">gin</Link></li>
+                            <li><Link to="/shop?category=spirits&type=rum">rum</Link></li>
+                            <li><Link to="/shop?category=spirits&type=tequila">tequila</Link></li>
+                            <li><Link to="/shop?category=spirits&type=cognac">cognac</Link></li>
+                          </>
+                        )}
                         <li><Link to="/shop?category=spirits">shop all types</Link></li>
                       </ul>
                     </div>
                     <div className='bg-white'>
                       <h3>FEATURED BRANDS</h3>
                       <ul>
-                        <li><Link to="/shop?brand=johnnie-walker">johnnie walker</Link></li>
-                        <li><Link to="/shop?brand=jack-daniels">jack daniel's</Link></li>
-                        <li><Link to="/shop?brand=absolut">absolut</Link></li>
-                        <li><Link to="/shop?brand=grey-goose">grey goose</Link></li>
-                        <li><Link to="/shop?brand=bacardi">bacardi</Link></li>
-                        <li><Link to="/shop?brand=hennessy">hennessy</Link></li>
+                        {brands
+                          .filter(brand => ['johnnie walker', 'jack daniels', 'absolut', 'grey goose', 'bacardi', 'hennessy']
+                                            .includes(brand.toLowerCase()))
+                          .map((brand, index) => (
+                            <li key={index}>
+                              <Link to={`/shop?brand=${brand.toLowerCase()}`}>
+                                {brand.toLowerCase()}
+                              </Link>
+                            </li>
+                          ))}
+                        {brands.length === 0 && (
+                          <>
+                            <li><Link to="/shop?brand=johnnie-walker">johnnie walker</Link></li>
+                            <li><Link to="/shop?brand=jack-daniels">jack daniel's</Link></li>
+                            <li><Link to="/shop?brand=absolut">absolut</Link></li>
+                            <li><Link to="/shop?brand=grey-goose">grey goose</Link></li>
+                            <li><Link to="/shop?brand=bacardi">bacardi</Link></li>
+                            <li><Link to="/shop?brand=hennessy">hennessy</Link></li>
+                          </>
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -342,22 +489,52 @@ const NavBar = () => {
                     <div>
                       <h3>TYPES</h3>
                       <ul>
-                        <li><Link to="/shop?category=beer&type=lager">lager</Link></li>
-                        <li><Link to="/shop?category=beer&type=ale">ale</Link></li>
-                        <li><Link to="/shop?category=beer&type=stout">stout</Link></li>
-                        <li><Link to="/shop?category=beer&type=ipa">ipa</Link></li>
-                        <li><Link to="/shop?category=beer&type=cider">cider</Link></li>
+                        {beerTypes && beerTypes.length > 0 ? (
+                          beerTypes
+                            // Sort alphabetically just like shop page
+                            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+                            .slice(0, 20)
+                            .map((type, index) => (
+                              <li key={index}>
+                                <Link to={`/shop?category=beer&type=${encodeURIComponent(type.toLowerCase())}`}>
+                                  {type.toLowerCase()}
+                                </Link>
+                              </li>
+                            ))
+                        ) : (
+                          <>
+                            <li><Link to="/shop?category=beer&type=lager">lager</Link></li>
+                            <li><Link to="/shop?category=beer&type=ale">ale</Link></li>
+                            <li><Link to="/shop?category=beer&type=stout">stout</Link></li>
+                            <li><Link to="/shop?category=beer&type=ipa">ipa</Link></li>
+                            <li><Link to="/shop?category=beer&type=cider">cider</Link></li>
+                          </>
+                        )}
                         <li><Link to="/shop?category=beer">shop all types</Link></li>
                       </ul>
                     </div>
                     <div>
                       <h3>FEATURED BRANDS</h3>
                       <ul>
-                        <li><Link to="/shop?brand=corona">corona</Link></li>
-                        <li><Link to="/shop?brand=heineken">heineken</Link></li>
-                        <li><Link to="/shop?brand=budweiser">budweiser</Link></li>
-                        <li><Link to="/shop?brand=stella-artois">stella artois</Link></li>
-                        <li><Link to="/shop?brand=guinness">guinness</Link></li>
+                        {brands
+                          .filter(brand => ['corona', 'heineken', 'budweiser', 'stella artois', 'guinness']
+                                           .includes(brand.toLowerCase()))
+                          .map((brand, index) => (
+                            <li key={index}>
+                              <Link to={`/shop?brand=${brand.toLowerCase()}`}>
+                                {brand.toLowerCase()}
+                              </Link>
+                            </li>
+                          ))}
+                        {brands.length === 0 && (
+                          <>
+                            <li><Link to="/shop?brand=corona">corona</Link></li>
+                            <li><Link to="/shop?brand=heineken">heineken</Link></li>
+                            <li><Link to="/shop?brand=budweiser">budweiser</Link></li>
+                            <li><Link to="/shop?brand=stella-artois">stella artois</Link></li>
+                            <li><Link to="/shop?brand=guinness">guinness</Link></li>
+                          </>
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -521,30 +698,35 @@ const NavBar = () => {
               <div className="hidden md:block relative">
                 <div className="flex items-center space-x-2">
                   <span className="text-dark font-medium">Hello, {user?.username}</span>
-                  <div className="relative group">
-                    <button className="flex items-center space-x-1 text-dark">
+                  <div className="relative profile-dropdown">
+                    <button 
+                      className="flex items-center space-x-1 text-dark profile-trigger"
+                      onClick={toggleProfileDropdown}
+                    >
                       <UserIcon className="h-5 w-5" />
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </button>
                     
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg hidden group-hover:block z-[100] border border-gray-200 rounded-md">
-                      <div className="py-2">
-                        <Link to="/notifications" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
-                          My Notifications
-                        </Link>
-                        <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
-                          My Orders
-                        </Link>
-                        <button 
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                        >
-                          Log Out
-                        </button>
+                    {profileDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg z-[100] border border-gray-200 rounded-md">
+                        <div className="py-2">
+                          <Link to="/notifications" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                            My Notifications
+                          </Link>
+                          <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                            My Orders
+                          </Link>
+                          <button 
+                            onClick={handleLogout}
+                            className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                          >
+                            Log Out
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

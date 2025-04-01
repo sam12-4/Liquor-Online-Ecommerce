@@ -79,7 +79,7 @@ const ChatWidget = () => {
       setMessages(prev => [
         ...prev, 
         { 
-          content: "Thanks for your message! One of our representatives will get back to you shortly. For immediate assistance, please call us at 1-800-123-4567.", 
+          content: "Thanks for your message! One of our representatives will get back to you shortly. For immediate assistance, please call us at 1-833-306 ", 
           isBot: true,
           isNew: true
         }

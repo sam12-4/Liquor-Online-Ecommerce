@@ -231,7 +231,7 @@ const DashboardHome = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md">
         <h1 className="text-2xl font-bold text-gray-800 font-serif">Dashboard Overview</h1>
         <p className="text-gray-600 mt-1 font-serif">
           View and manage your store's inventory, orders, and notifications.
@@ -255,13 +255,13 @@ const DashboardHome = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsData.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div key={index} className="stats-card bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-all duration-300">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-black/5 p-3 rounded-lg">
                 {stat.icon}
               </div>
               <div className="text-right">
-                <Link to={stat.link} className="text-xs text-[#c0a483] hover:underline font-serif">
+                <Link to={stat.link} className="text-xs text-[#c0a483] hover:underline font-serif animated-link">
                   {stat.linkText}
                 </Link>
               </div>
@@ -272,304 +272,133 @@ const DashboardHome = () => {
         ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Stock Distribution Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Inventory Status</h2>
-          {loading ? (
-            <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={stockData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {stockData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              
-              <div className="grid grid-cols-3 gap-2 mt-4 w-full">
-                {stockData.map((entry, index) => (
-                  <div key={index} className="flex items-center">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: entry.color }}
-                    ></div>
-                    <span className="text-xs text-gray-600 font-serif">{entry.name}: {entry.value}</span>
-                  </div>
-                ))}
+      {/* Content Sections - 3 columns on larger screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Low Stock Products */}
+        <div className="lg:col-span-2">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-full transition-all duration-300 hover:shadow-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif flex items-center">
+              <ExclamationCircleIcon className="h-5 w-5 text-yellow-500 mr-2" />
+              Low Stock Products
+            </h2>
+            
+            {lowStockProducts.length === 0 ? (
+              <div className="bg-green-50 p-4 rounded-md text-green-700 font-serif">
+                <p className="flex items-center">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  All products have sufficient stock levels.
+                </p>
               </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Category Distribution Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Top Product Categories</h2>
-          {loading ? (
-            <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart
-                data={categoriesData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" fill="#c0a483" name="Products" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Middle Row */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Notification Activity Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Notification Activity (Last 7 Days)</h2>
-          {loading ? (
-            <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart
-                data={notificationsTimelineData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Line type="monotone" dataKey="orders" stroke="#c0a483" name="Order Notifications" />
-                <Line type="monotone" dataKey="stock" stroke="#ef4444" name="Stock Alerts" />
-                <Line type="monotone" dataKey="other" stroke="#6b7280" name="Other Notifications" />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Low Stock Products */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 font-serif">Low Stock Products</h2>
-            <Link to="/admin/dashboard/products" className="text-sm text-[#c0a483] hover:underline font-serif">
-              View All
-            </Link>
-          </div>
-          
-          {loading ? (
-            <div className="py-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500 font-serif">Loading products...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
-                      Product
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
-                      Stock
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {products
-                    .filter(p => {
-                      const stock = parseInt(p.stock || p.stock_quantity || 0);
-                      return stock > 0 && stock < 5;
-                    })
-                    .slice(0, 5)
-                    .map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+            ) : (
+              <div className="overflow-x-auto responsive-table">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Stock</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {lowStockProducts.map((product, index) => (
+                      <tr key={product._id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
-                            {product.image && (
-                              <div className="h-10 w-10 flex-shrink-0 mr-3">
-                                <img
-                                  className="h-10 w-10 rounded-full"
-                                  src={product.image || product.images}
-                                  alt={product.name || product.post_title}
-                                />
-                              </div>
-                            )}
-                            <div className="text-sm font-medium text-gray-900 font-serif">
-                              {product.name || product.post_title}
+                            <div className="w-10 h-10 flex-shrink-0 mr-3">
+                              <img 
+                                src={product.image_url} 
+                                alt={product.name}
+                                className="w-10 h-10 object-cover rounded-md border border-gray-200" 
+                              />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{product.name}</p>
+                              <p className="text-xs text-gray-500">{product.brand}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 font-serif">
-                            {product.stock || product.stock_quantity}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 font-serif">
-                            Low Stock
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            {product.stock || product.stock_quantity || 0} left
                           </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Link
+                            to="/admin/dashboard/products"
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs leading-4 font-medium rounded-md text-[#c0a483] bg-[#f8f5f0] hover:bg-[#f0e9df] transition-colors duration-150"
+                          >
+                            Edit
+                          </Link>
                         </td>
                       </tr>
                     ))}
-                  {products.filter(p => {
-                    const stock = parseInt(p.stock || p.stock_quantity || 0);
-                    return stock > 0 && stock < 5;
-                  }).length === 0 && (
-                    <tr>
-                      <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500 font-serif">
-                        No low stock products found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        
-        {/* Recent Notifications */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 font-serif">Recent Notifications</h2>
-            <Link to="/admin/dashboard/notifications" className="text-sm text-[#c0a483] hover:underline font-serif">
-              View All
-            </Link>
-          </div>
-          
-          <div className="space-y-4">
-            {notifications.slice(0, 5).map((notification, index) => (
-              <Link 
-                key={index} 
-                to={`/admin/dashboard/notifications/${notification._id}`}
-                className="block p-4 border border-gray-100 rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getNotificationIcon(notification.type, notification.orderStatus)}
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <div className="flex justify-between">
-                      <p className="text-sm font-medium text-gray-900 font-serif">
-                        {notification.title}
-                      </p>
-                      {!notification.read && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#c0a483] text-white font-serif">
-                          New
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600 truncate font-serif">
-                      {notification.message}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500 font-serif">
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {notifications.length === 0 && (
-              <div className="text-center py-4 text-sm text-gray-500 font-serif">
-                No notifications found
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
         </div>
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Notification Summary */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Notification Summary</h2>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <BellIcon className="h-5 w-5 text-[#c0a483] mr-2" />
-                <span className="text-sm text-gray-600 font-serif">All Notifications</span>
-              </div>
-              <span className="font-medium font-serif">{notifications.length}</span>
-            </div>
+        
+        {/* Right Column - Recent Notifications */}
+        <div className="lg:col-span-1">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 h-full transition-all duration-300 hover:shadow-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif flex items-center">
+              <BellIcon className="h-5 w-5 text-[#c0a483] mr-2" />
+              Recent Notifications
+            </h2>
             
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <BellIcon className="h-5 w-5 text-[#c0a483] mr-2" />
-                <span className="text-sm text-gray-600 font-serif">Unread</span>
-              </div>
-              <span className="font-medium font-serif">{unreadNotifications}</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ExclamationCircleIcon className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-sm text-gray-600 font-serif">Stock Alerts</span>
-              </div>
-              <span className="font-medium font-serif">{stockNotifications}</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ShoppingBagIcon className="h-5 w-5 text-[#c0a483] mr-2" />
-                <span className="text-sm text-gray-600 font-serif">Order Updates</span>
-              </div>
-              <span className="font-medium font-serif">
-                {notifications.filter(n => 
-                  n.type === 'order_placed' || n.type === 'order_status_change'
-                ).length}
-              </span>
-            </div>
-          </div>
-          
-          <div className="mt-6 text-center">
-            <Link 
-              to="/admin/dashboard/notifications" 
-              className="text-[#c0a483] hover:text-black text-sm font-medium font-serif uppercase"
-            >
-              View All Notifications
-            </Link>
+            <div className="space-y-3">
+              {notifications.length === 0 ? (
+                <div className="bg-blue-50 p-4 rounded-md text-blue-700 font-serif">
+                  <p>No new notifications.</p>
+                </div>
+              ) : (
+                notifications.slice(0, 5).map((notification) => (
+                  <div 
+                    key={notification._id}
+                    className={`notification-item p-3 rounded-md transition-all duration-200 ${
+                      !notification.isRead ? 'notification-unread' : ''
+                    }`}
+                  >
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getNotificationIcon(notification.type)}
+                </div>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-800">{notification.title}</p>
+                        <p className="text-xs text-gray-500">{formatTimeAgo(notification.createdAt)}</p>
           </div>
         </div>
-        
+      </div>
+                ))
+              )}
+              
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <Link
+                  to="/admin/dashboard/notifications"
+                  className="text-sm text-[#c0a483] hover:text-black flex items-center font-serif animated-link"
+                >
+                  <span>View all notifications</span>
+                  <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+          </div>
+          
+      {/* Bottom Sections - 2 columns on larger screens */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Quick Actions</h2>
           
           <div className="grid grid-cols-2 gap-4">
             <Link
               to="/admin/dashboard/products"
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
             >
               <ShoppingBagIcon className="h-8 w-8 text-[#c0a483] mb-2" />
               <span className="text-sm font-medium text-gray-700 font-serif">Add Product</span>
@@ -577,7 +406,7 @@ const DashboardHome = () => {
             
             <Link
               to="/admin/dashboard/orders"
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
             >
               <ShoppingBagIcon className="h-8 w-8 text-[#c0a483] mb-2" />
               <span className="text-sm font-medium text-gray-700 font-serif">View Orders</span>
@@ -585,7 +414,7 @@ const DashboardHome = () => {
             
             <Link
               to="/admin/dashboard/discount-codes"
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
             >
               <TicketIcon className="h-8 w-8 text-[#c0a483] mb-2" />
               <span className="text-sm font-medium text-gray-700 font-serif">Discount Codes</span>
@@ -593,7 +422,7 @@ const DashboardHome = () => {
             
             <Link
               to="/admin/dashboard/excel"
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
             >
               <CurrencyDollarIcon className="h-8 w-8 text-[#c0a483] mb-2" />
               <span className="text-sm font-medium text-gray-700 font-serif">Excel Manager</span>
@@ -602,7 +431,7 @@ const DashboardHome = () => {
         </div>
         
         {/* System Status */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">System Status</h2>
           
           <div className="space-y-4">
@@ -611,8 +440,8 @@ const DashboardHome = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
-            </div>
-            
+          </div>
+          
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 font-serif">Orders System</div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
@@ -625,8 +454,8 @@ const DashboardHome = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
-            </div>
-            
+        </div>
+        
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 font-serif">Notification System</div>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
@@ -639,14 +468,11 @@ const DashboardHome = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
-            </div>
-          </div>
+                </div>
+              </div>
           
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="text-sm text-gray-600 flex justify-between font-serif">
-              <span>Last System Update:</span>
-              <span className="font-medium">{new Date().toLocaleDateString()}</span>
-            </div>
+          <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500 font-serif">
+            Last updated: {new Date().toLocaleString()}
           </div>
         </div>
       </div>

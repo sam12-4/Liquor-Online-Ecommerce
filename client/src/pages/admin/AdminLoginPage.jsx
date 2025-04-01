@@ -59,7 +59,7 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="admin-page">
+    <div className="admin-page min-h-screen bg-gray-50">
       {/* Hero Banner */}
       <div className="relative h-64 bg-black flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
@@ -84,7 +84,7 @@ const AdminLoginPage = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Link to="/" className="hover:text-[#c0a483]">Home</Link>
+            <Link to="/" className="hover:text-[#c0a483] animated-link">Home</Link>
             <span className="mx-2">›</span>
             <span className="font-medium">Admin</span>
           </motion.div>
@@ -92,14 +92,24 @@ const AdminLoginPage = () => {
       </div>
 
       <div className="container mx-auto px-4 py-16">
-        <div className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+        <motion.div 
+          className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-md border border-gray-200"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
           <h2 className="text-2xl font-bold text-dark mb-6 text-center font-serif uppercase">Administrator Access</h2>
           
           {/* Display error message if there is one */}
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700">
+            <motion.div 
+              className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <p className="font-serif">{error}</p>
-            </div>
+            </motion.div>
           )}
           
           <form onSubmit={handleSubmit}>
@@ -111,7 +121,7 @@ const AdminLoginPage = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#c0a483]"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#c0a483] focus:ring-2 focus:ring-[#c0a483]/20 transition-all duration-300"
                 disabled={loginInProgress}
                 required
               />
@@ -125,7 +135,7 @@ const AdminLoginPage = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#c0a483]"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-[#c0a483] focus:ring-2 focus:ring-[#c0a483]/20 transition-all duration-300"
                 disabled={loginInProgress}
                 required
               />
@@ -146,29 +156,36 @@ const AdminLoginPage = () => {
               </div>
             </div>
             
-            <button 
+            <motion.button 
               type="submit"
               disabled={loginInProgress || loading}
-              className="w-full bg-black text-white py-3 uppercase font-serif transition-colors hover:bg-[#c0a483] disabled:bg-gray-400"
+              className="w-full bg-black text-white py-3 uppercase font-serif transition-all duration-300 hover:bg-[#c0a483] disabled:bg-gray-400 rounded-md hover:shadow-md hover:-translate-y-1 active:translate-y-0"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
             >
               {loginInProgress ? 'LOGGING IN...' : 'LOGIN'}
-            </button>
+            </motion.button>
           </form>
           
           <div className="mt-6 text-center">
-            <Link to="/" className="text-[#c0a483] hover:text-black font-serif">Return to Homepage</Link>
+            <Link to="/" className="text-[#c0a483] hover:text-black font-serif animated-link">Return to Homepage</Link>
           </div>
           
           {/* Default credentials info for demo purposes */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600 font-serif">
+          <motion.div 
+            className="mt-8 pt-6 border-t border-gray-200"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            <div className="text-sm text-gray-600 font-serif bg-gray-50 p-4 rounded-md">
               <p className="font-medium mb-2">Default Admin Credentials:</p>
               <p>Username: admin</p>
               <p>Email: admin@example.com</p>
               <p>Password: admin</p>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

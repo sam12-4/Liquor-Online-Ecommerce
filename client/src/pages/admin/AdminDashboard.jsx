@@ -23,6 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import AdminNotificationBell from '../../components/admin/AdminNotificationBell';
+import { initTableScrollIndicators } from '../../utils/adminUI';
 import '../../styles/admin.css';
 
 const AdminDashboard = () => {
@@ -43,6 +44,16 @@ const AdminDashboard = () => {
       navigate('/admin');
     }
   }, [location, navigate, loading, isAuthenticated]);
+
+  // Initialize table scroll indicators when component mounts
+  useEffect(() => {
+    // Short delay to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      initTableScrollIndicators();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -80,9 +91,9 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="admin-page flex h-screen bg-white">
+    <div className="admin-page flex h-screen bg-white overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-black text-white flex flex-col sidebar">
+      <div className="w-64 bg-black text-white flex flex-col sidebar overflow-y-auto">
         {/* Logo */}
         <div className="p-5 border-b border-gray-800">
           <Link to="/admin/dashboard" className="flex items-center space-x-2">
@@ -222,12 +233,12 @@ const AdminDashboard = () => {
         </div>
         
         {/* Logout */}
-        <div className="p-4 border-t border-gray-800">
-          <button
+        <div className=" bottom-0 left-0 right-0 p-4 border-t border-gray-800">
+          <button 
             onClick={handleLogout}
-            className="flex items-center space-x-2 text-white w-full px-4 py-2 rounded-md hover:bg-[#c0a483] transition-colors font-serif uppercase"
+            className="flex items-center justify-center w-full py-2 px-4 bg-[#c0a483] hover:bg-[#a88a69] text-white rounded transition-all duration-300 font-serif"
           >
-            <ArrowLeftOnRectangleIcon className="h-5 w-5" />
+            <ArrowLeftOnRectangleIcon className="h-5 w-5 mr-2" />
             <span>Logout</span>
           </button>
         </div>
@@ -241,7 +252,7 @@ const AdminDashboard = () => {
             <h1 className="text-2xl font-serif text-gray-800">Welcome, {admin?.username || 'Admin'}!</h1>
             <div className="flex items-center space-x-4">
               <AdminNotificationBell />
-              <div className="h-8 w-8 rounded-full bg-[#c0a483] flex items-center justify-center text-white font-semibold">
+              <div className="h-8 w-8 rounded-full bg-[#c0a483] flex items-center justify-center text-white font-semibold shadow-sm">
                 {admin?.username?.charAt(0).toUpperCase() || 'A'}
               </div>
             </div>
@@ -249,8 +260,10 @@ const AdminDashboard = () => {
         </header>
         
         {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-white p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6 content-area">
+          <div className="container mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
