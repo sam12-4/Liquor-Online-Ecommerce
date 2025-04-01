@@ -1248,7 +1248,7 @@ app.delete('/api/taxonomy/:type/:name', async (req, res) => {
 });
 
 // Get list of backup files
-app.get('/api/backups', (req, res) => {
+app.get('/api/backups', authenticateAdmin, (req, res) => {
   try {
     // Check if backup folder exists
     if (!fs.existsSync(BACKUP_FOLDER)) {
@@ -1288,12 +1288,12 @@ function formatFileSize(bytes) {
 }
 
 // Download a specific backup file
-app.get('/api/backups/download/:filename', (req, res) => {
+app.get('/api/backups/download/:filename', authenticateAdmin, (req, res) => {
   try {
     const filename = req.params.filename;
     
-    // Validate filename to prevent directory traversal attacks
-    if (!filename.match(/^products-backup-[\d-T]+\.xlsx$/)) {
+    // Validate filename to prevent directory traversal attacks - include Z for timezone in ISO format
+    if (!filename.match(/^products-backup-[\d-TZ]+\.xlsx$/)) {
       return res.status(400).json({ error: 'Invalid backup filename' });
     }
     

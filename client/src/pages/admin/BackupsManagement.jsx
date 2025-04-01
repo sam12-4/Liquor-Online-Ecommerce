@@ -19,7 +19,9 @@ function BackupsManagement() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_URL}/backups`);
+      const response = await fetch(`${API_URL}/backups`, {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch backups: ${response.status} ${response.statusText}`);
@@ -41,17 +43,44 @@ function BackupsManagement() {
     setRefreshing(false);
   };
 
-  const handleDownload = (backupPath) => {
+  const handleDownload = async (backupPath) => {
     try {
+      console.log('Original backupPath:', backupPath);
+      
+      // Extract just the filename from the path
+      const filename = backupPath.split('/').pop();
+      console.log('Extracted filename:', filename);
+      
+      // Make sure we're requesting directly from the endpoint with the filename parameter
+      const downloadUrl = `${API_URL}/backups/download/${filename}`;
+      console.log('Download URL:', downloadUrl);
+      
+      // Use fetch with credentials to get the file
+      const response = await fetch(downloadUrl, {
+        credentials: 'include' // Include cookies for authentication
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the blob from response
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
       // Create a link element and trigger download
       const link = document.createElement('a');
-      link.href = `${API_URL}${backupPath}`;
+      link.href = url;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       
       // Clean up
       setTimeout(() => {
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }, 100);
     } catch (err) {
       console.error('Error downloading backup file:', err);
