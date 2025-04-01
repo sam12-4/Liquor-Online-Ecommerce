@@ -457,19 +457,19 @@ const NavBar = () => {
                                             .includes(brand.toLowerCase()))
                           .map((brand, index) => (
                             <li key={index}>
-                              <Link to={`/shop?brand=${brand.toLowerCase()}`}>
+                              <Link to={`/shop?category=spirits&brand=${encodeURIComponent(brand.toLowerCase())}`}>
                                 {brand.toLowerCase()}
                               </Link>
                             </li>
                           ))}
                         {brands.length === 0 && (
                           <>
-                            <li><Link to="/shop?brand=johnnie-walker">johnnie walker</Link></li>
-                            <li><Link to="/shop?brand=jack-daniels">jack daniel's</Link></li>
-                            <li><Link to="/shop?brand=absolut">absolut</Link></li>
-                            <li><Link to="/shop?brand=grey-goose">grey goose</Link></li>
-                            <li><Link to="/shop?brand=bacardi">bacardi</Link></li>
-                            <li><Link to="/shop?brand=hennessy">hennessy</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=johnnie-walker">johnnie walker</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=jack-daniels">jack daniel's</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=absolut">absolut</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=grey-goose">grey goose</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=bacardi">bacardi</Link></li>
+                            <li><Link to="/shop?category=spirits&brand=hennessy">hennessy</Link></li>
                           </>
                         )}
                       </ul>
@@ -521,18 +521,18 @@ const NavBar = () => {
                                            .includes(brand.toLowerCase()))
                           .map((brand, index) => (
                             <li key={index}>
-                              <Link to={`/shop?brand=${brand.toLowerCase()}`}>
+                              <Link to={`/shop?category=beer&brand=${encodeURIComponent(brand.toLowerCase())}`}>
                                 {brand.toLowerCase()}
                               </Link>
                             </li>
                           ))}
                         {brands.length === 0 && (
                           <>
-                            <li><Link to="/shop?brand=corona">corona</Link></li>
-                            <li><Link to="/shop?brand=heineken">heineken</Link></li>
-                            <li><Link to="/shop?brand=budweiser">budweiser</Link></li>
-                            <li><Link to="/shop?brand=stella-artois">stella artois</Link></li>
-                            <li><Link to="/shop?brand=guinness">guinness</Link></li>
+                            <li><Link to="/shop?category=beer&brand=corona">corona</Link></li>
+                            <li><Link to="/shop?category=beer&brand=heineken">heineken</Link></li>
+                            <li><Link to="/shop?category=beer&brand=budweiser">budweiser</Link></li>
+                            <li><Link to="/shop?category=beer&brand=stella-artois">stella artois</Link></li>
+                            <li><Link to="/shop?category=beer&brand=guinness">guinness</Link></li>
                           </>
                         )}
                       </ul>

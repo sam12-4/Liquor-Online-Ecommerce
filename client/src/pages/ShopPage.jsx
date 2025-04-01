@@ -53,6 +53,83 @@ const ShopPage = () => {
     countries: []
   });
 
+  // Process URL parameters from navbar links
+  useEffect(() => {
+    if (!loading && products.length > 0) {
+      const newFilters = {
+        categories: [],
+        brands: [],
+        types: [],
+        colors: [],
+        countries: []
+      };
+
+      // Get category from URL
+      const category = searchParams.get('category');
+      if (category) {
+        // Capitalize the first letter to match with filter format
+        const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+        newFilters.categories.push(formattedCategory);
+      }
+
+      // Get type from URL
+      const type = searchParams.get('type');
+      if (type) {
+        // Capitalize the first letter to match with filter format
+        const formattedType = type.charAt(0).toUpperCase() + type.slice(1);
+        newFilters.types.push(formattedType);
+      }
+
+      // Get brand from URL
+      const brand = searchParams.get('brand');
+      if (brand) {
+        // Find the matching brand with proper capitalization
+        const matchedBrand = products
+          .map(p => p.brand || p['tax:product_brand'])
+          .filter(Boolean)
+          .find(b => b.toLowerCase() === brand.toLowerCase());
+        
+        if (matchedBrand) {
+          newFilters.brands.push(matchedBrand);
+        }
+      }
+
+      // Get country from URL
+      const country = searchParams.get('country');
+      if (country) {
+        // Find the matching country with proper capitalization
+        const matchedCountry = products
+          .map(p => p.country || p['tax:Country'])
+          .filter(Boolean)
+          .find(c => c.toLowerCase() === country.toLowerCase());
+        
+        if (matchedCountry) {
+          newFilters.countries.push(matchedCountry);
+        }
+      }
+
+      // Get varietal from URL
+      const varietal = searchParams.get('varietal');
+      if (varietal) {
+        // Handle varietal filtering if needed
+        // This would depend on how varietals are stored in your product data
+      }
+
+      // Get special parameter for special products
+      const special = searchParams.get('special');
+      if (special) {
+        // Handle special products filtering
+        // This might need to be customized based on how special products are marked in your data
+        // For example if they have a 'special_type' field or something similar
+      }
+
+      // Apply the collected filters only if we have any
+      if (Object.values(newFilters).some(arr => arr.length > 0)) {
+        setActiveFilters(newFilters);
+      }
+    }
+  }, [searchParams, products, loading]);
+
   // Helper function to add a filter of any type
   const addFilter = (filterType, value) => {
     if (!activeFilters[filterType].includes(value)) {
@@ -92,7 +169,9 @@ const ShopPage = () => {
 
   // Helper function to check if a filter is active
   const isFilterActive = (filterType, value) => {
-    return activeFilters[filterType].includes(value);
+    return activeFilters[filterType].some(filter => 
+      filter.toLowerCase() === value.toLowerCase()
+    );
   };
 
   // Toggle a filter on/off
@@ -412,7 +491,7 @@ const ShopPage = () => {
                         onChange={() => toggleFilter('categories', category)}
                     />
                     <label htmlFor={`cat-${category.toLowerCase()}`} className="cursor-pointer text-[#868686]">
-                      {category} ({categoryCount[category] || 0})
+                      {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()} ({categoryCount[category] || 0})
                       </label>
                     </div>
                   ))}
@@ -591,7 +670,7 @@ const ShopPage = () => {
                             onClick={() => removeFilter('categories', filter)}
                             className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
                           >
-                            {filter}
+                            {filter.charAt(0).toUpperCase() + filter.slice(1).toLowerCase()}
                             <XMarkIcon className="h-4 w-4 ml-1" />
                           </button>
                         ))}
