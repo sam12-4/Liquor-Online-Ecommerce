@@ -61,10 +61,11 @@ const DashboardHome = () => {
   
   // Calculate key metrics
   const totalProducts = products.length;
-  const lowStockProducts = products.filter(p => {
+  const lowStockProductsArray = products.filter(p => {
     const stock = parseInt(p.stock || p.stock_quantity || 0);
     return stock > 0 && stock < 5;
-  }).length;
+  });
+  const lowStockProducts = lowStockProductsArray.length;
   const outOfStockProducts = products.filter(p => {
     const stock = parseInt(p.stock || p.stock_quantity || 0);
     return stock === 0;
@@ -175,6 +176,45 @@ const DashboardHome = () => {
     }
   ];
   
+  // Handle Google login error
+  const handleGoogleLoginError = () => {
+    console.error('Google login failed');
+  };
+
+  // Format time ago function
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const seconds = Math.floor((now - date) / 1000);
+    
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) {
+      return interval === 1 ? '1 year ago' : `${interval} years ago`;
+    }
+    
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) {
+      return interval === 1 ? '1 month ago' : `${interval} months ago`;
+    }
+    
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) {
+      return interval === 1 ? '1 day ago' : `${interval} days ago`;
+    }
+    
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) {
+      return interval === 1 ? '1 hour ago' : `${interval} hours ago`;
+    }
+    
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) {
+      return interval === 1 ? '1 minute ago' : `${interval} minutes ago`;
+    }
+    
+    return seconds < 10 ? 'just now' : `${Math.floor(seconds)} seconds ago`;
+  };
+
   // Get notification icon based on type
   const getNotificationIcon = (type, status) => {
     if (type === 'order_placed') {
@@ -282,7 +322,7 @@ const DashboardHome = () => {
               Low Stock Products
             </h2>
             
-            {lowStockProducts.length === 0 ? (
+            {lowStockProductsArray.length === 0 ? (
               <div className="bg-green-50 p-4 rounded-md text-green-700 font-serif">
                 <p className="flex items-center">
                   <CheckCircleIcon className="h-5 w-5 mr-2" />
@@ -300,7 +340,7 @@ const DashboardHome = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {lowStockProducts.map((product, index) => (
+                    {lowStockProductsArray.map((product, index) => (
                       <tr key={product._id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
