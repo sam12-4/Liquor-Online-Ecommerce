@@ -1,0 +1,222 @@
+/* Admin Panel Styling - matching main app design */
+
+/* Colors */
+:root {
+  --primary-color: #c0a483;
+  --text-dark: #212529;
+  --text-light: #6c757d;
+  --border-color: #e5e7eb;
+  --bg-light: #f8f9fa;
+  --green-accent: #6c8d7f;
+}
+
+/* Typography */
+.admin-page {
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+}
+
+.admin-page h1, 
+.admin-page h2, 
+.admin-page h3, 
+.admin-page h4,
+.admin-page .font-serif,
+.admin-page .uppercase-title,
+.admin-page button {
+  font-family: var(--font-serif, "Playfair Display", Georgia, "Times New Roman", serif);
+}
+
+.admin-page .uppercase-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Buttons */
+.admin-page .btn-primary {
+  background-color: black;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.admin-page .btn-primary:hover {
+  background-color: var(--primary-color);
+}
+
+.admin-page .btn-outline {
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.admin-page .btn-outline:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Links */
+.admin-page a {
+  color: var(--primary-color);
+  transition: all 0.2s ease;
+}
+
+.admin-page a:hover {
+  color: black;
+}
+
+/* Cards and Panels */
+.admin-page .card {
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Controls */
+.admin-page .form-control {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.admin-page .form-control:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(192, 164, 131, 0.1);
+}
+
+.admin-page .form-label {
+  font-family: var(--font-serif);
+  color: var(--text-dark);
+}
+
+/* Tables */
+.admin-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-page th {
+  font-family: var(--font-serif);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.admin-page td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font-serif);
+  color: var(--text-dark);
+}
+
+.admin-page tbody tr:hover {
+  background-color: var(--bg-light);
+}
+
+/* Badges and Status Indicators */
+.admin-page .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  font-family: var(--font-serif);
+}
+
+.admin-page .badge-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.admin-page .badge-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.admin-page .badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.admin-page .badge-danger {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+/* Loading Indicators */
+.admin-page .spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Admin Layout */
+.admin-page .sidebar {
+  background-color: black;
+  color: white;
+  min-height: 100vh;
+}
+
+.admin-page .sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: #e5e7eb;
+  font-family: var(--font-serif);
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.admin-page .sidebar-link:hover,
+.admin-page .sidebar-link.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.admin-page .sidebar-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  font-family: var(--font-serif);
+}
+
+/* Notification Styles */
+.admin-page .notification-item {
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.admin-page .notification-item:hover {
+  background-color: var(--bg-light);
+}
+
+.admin-page .notification-unread {
+  border-left: 3px solid var(--primary-color);
+}
+
+/* Chart colors */
+.admin-page .chart-primary {
+  fill: var(--primary-color);
+  stroke: var(--primary-color);
+} 

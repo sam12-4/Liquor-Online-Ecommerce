@@ -9,6 +9,7 @@ import {
 } from '../../data/productLoader';
 import { useProducts } from '../../context/ProductContext';
 import { useTaxonomy } from '../../context/TaxonomyContext';
+import '../../styles/admin.css';
 
 // Fields that don't need to be shown in the form (auto-generated)
 const HIDDEN_FIELDS = [
@@ -784,251 +785,240 @@ const NewProductForm = ({ onClose, onProductAdded, product = null, isEditing = f
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              {isEditing ? `Edit Product: ${product.name || product.post_title}` : 'Add New Product'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
+    <div className="admin-page fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900 font-serif uppercase">
+            {isEditing ? 'Edit Product' : 'Add New Product'}
+          </h2>
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-[#c0a483] focus:outline-none"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-8">
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-8">
             
-              {/* Error message */}
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 text-red-500">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 text-red-500">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
                   </div>
                 </div>
-              )}
-              
-              {/* Form sections */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Image Upload Section */}
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Product Image {!isEditing && <span className="text-red-500">*</span>}
-                  </label>
-                  <div className="flex flex-col space-y-4">
-                    <div 
-                      onClick={() => fileInputRef.current.click()}
-                      className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center w-full h-40 cursor-pointer ${
-                        formData.imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {formData.imagePreview ? (
-                        <img 
-                          src={formData.imagePreview} 
-                          alt="Preview" 
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      ) : (
-                        <>
-                          <ArrowUpTrayIcon className="h-8 w-8 text-gray-400" />
-                          <span className="mt-2 text-sm text-gray-500">
-                            {isEditing ? 'Upload new image (optional)' : 'Upload image'}
-                          </span>
-                        </>
-                      )}
-                      <input 
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        className="hidden"
+              </div>
+            )}
+            
+            {/* Form sections */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Image Upload Section */}
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Product Image {!isEditing && <span className="text-red-500">*</span>}
+                </label>
+                <div className="flex flex-col space-y-4">
+                  <div 
+                    onClick={() => fileInputRef.current.click()}
+                    className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center w-full h-40 cursor-pointer ${
+                      formData.imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    {formData.imagePreview ? (
+                      <img 
+                        src={formData.imagePreview} 
+                        alt="Preview" 
+                        className="max-h-full max-w-full object-contain"
                       />
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={testCloudinaryUpload}
-                        disabled={isUploading || !formData.image || isTestingConnection}
-                        className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded hover:bg-blue-100 disabled:opacity-50"
-                      >
-                        {isUploading ? 'Testing upload...' : 'Test Cloudinary Upload'}
-                      </button>
-                      <a 
-                        href="https://cloudinary.com/console/settings/upload" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm bg-gray-50 text-gray-600 px-3 py-1 rounded hover:bg-gray-100"
-                      >
-                        Cloudinary Settings
-                      </a>
-                    </div>
+                    ) : (
+                      <>
+                        <ArrowUpTrayIcon className="h-8 w-8 text-gray-400" />
+                        <span className="mt-2 text-sm text-gray-500">
+                          {isEditing ? 'Upload new image (optional)' : 'Upload image'}
+                        </span>
+                      </>
+                    )}
+                    <input 
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={testCloudinaryUpload}
+                      disabled={isUploading || !formData.image || isTestingConnection}
+                      className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded hover:bg-blue-100 disabled:opacity-50"
+                    >
+                      {isUploading ? 'Testing upload...' : 'Test Cloudinary Upload'}
+                    </button>
+                    <a 
+                      href="https://cloudinary.com/console/settings/upload" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm bg-gray-50 text-gray-600 px-3 py-1 rounded hover:bg-gray-100"
+                    >
+                      Cloudinary Settings
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Basic Information */}
+              <div className="col-span-2">
+                <h3 className="text-lg font-medium mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Core product fields */}
+                  {renderField('name')}
+                  {renderField('regular_price')}
+                  {renderField('sale_price')}
+                  {renderField('stock')}
+                  {renderField('stock_status')}
+                  {renderField('category')}
+                  {renderField('type')}
+                </div>
+              </div>
+            </div>
+            
+            {/* Product Details */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium mb-4">Product Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Product details fields */}
+                {renderField('brand')}
+                {renderField('country')}
+                {renderField('region')}
+                {renderField('varietal')}
+                {renderField('alcohol')}
+                
+                {/* Size and Unit */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">
+                      Size <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="size"
+                      name="size"
+                      value={formData.size || ''}
+                      onChange={(e) => {
+                        // Get the numeric value
+                        const newValue = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          size: newValue,
+                          'attribute:pa_product-volume': newValue ? `${newValue}ML` : ''
+                        }));
+                      }}
+                      required
+                      min="0"
+                      step="1" 
+                      onKeyDown={(e) => {
+                        // Prevent decimal point input
+                        if (e.key === '.' || e.key === ',') {
+                          e.preventDefault();
+                        }
+                      }}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter size in ml"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit
+                    </label>
+                    <select
+                      id="unit"
+                      name="unit"
+                      value={formData.unit || 'ml'}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      disabled
+                    >
+                      <option value="ml">ml</option>
+                      <option value="L">L</option>
+                      <option value="oz">oz</option>
+                      <option value="cl">cl</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">ML will be added automatically</p>
                   </div>
                 </div>
                 
-                {/* Basic Information */}
-                <div className="col-span-2">
-                  <h3 className="text-lg font-medium mb-4">Basic Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Core product fields */}
-                    {renderField('name')}
-                    {renderField('regular_price')}
-                    {renderField('sale_price')}
-                    {renderField('stock')}
-                    {renderField('stock_status')}
-                    {renderField('category')}
-                    {renderField('type')}
-                  </div>
-                </div>
+                {/* Other fields */}
+                {renderField('cost_price')}
+                {renderField('backorders')}
+                {renderField('sold_individually')}
+                {renderField('tax_status')}
               </div>
-              
-              {/* Product Details */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Product Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Product details fields */}
-                  {renderField('brand')}
-                  {renderField('country')}
-                  {renderField('region')}
-                  {renderField('varietal')}
-                  {renderField('alcohol')}
-                  
-                  {/* Size and Unit */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor="size" className="block text-sm font-medium text-gray-700 mb-1">
-                        Size <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        id="size"
-                        name="size"
-                        value={formData.size || ''}
-                        onChange={(e) => {
-                          // Get the numeric value
-                          const newValue = e.target.value;
-                          setFormData(prev => ({
-                            ...prev,
-                            size: newValue,
-                            'attribute:pa_product-volume': newValue ? `${newValue}ML` : ''
-                          }));
-                        }}
-                        required
-                        min="0"
-                        step="1" 
-                        onKeyDown={(e) => {
-                          // Prevent decimal point input
-                          if (e.key === '.' || e.key === ',') {
-                            e.preventDefault();
-                          }
-                        }}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter size in ml"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
-                        Unit
-                      </label>
-                      <select
-                        id="unit"
-                        name="unit"
-                        value={formData.unit || 'ml'}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        disabled
-                      >
-                        <option value="ml">ml</option>
-                        <option value="L">L</option>
-                        <option value="oz">oz</option>
-                        <option value="cl">cl</option>
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">ML will be added automatically</p>
-                    </div>
-                  </div>
-                  
-                  {/* Other fields */}
-                  {renderField('cost_price')}
-                  {renderField('backorders')}
-                  {renderField('sold_individually')}
-                  {renderField('tax_status')}
-                </div>
+            </div>
+            
+            {/* Product Flags */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium mb-4">Product Flags</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {renderBooleanField('isHot')}
+                {renderBooleanField('isLimitedEdition')}
+                {renderBooleanField('isRecommended')}
+                {renderBooleanField('isSpecial')}
+                {renderBooleanField('isTrending')}
               </div>
-              
-              {/* Product Flags */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Product Flags</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {renderBooleanField('isHot')}
-                  {renderBooleanField('isLimitedEdition')}
-                  {renderBooleanField('isRecommended')}
-                  {renderBooleanField('isSpecial')}
-                  {renderBooleanField('isTrending')}
-                </div>
+            </div>
+            
+            {/* Description */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium mb-4">Descriptions</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {renderField('short_description')}
+                {renderField('description')}
+                {renderField('purchase_note')}
               </div>
-              
-              {/* Description */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Descriptions</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {renderField('short_description')}
-                  {renderField('description')}
-                  {renderField('purchase_note')}
-                </div>
+            </div>
+            
+            {/* Advanced Settings */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium mb-4">Advanced Settings</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {renderField('post_status')}
+                {renderField('comment_status')}
               </div>
-              
-              {/* Advanced Settings */}
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-medium mb-4">Advanced Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {renderField('post_status')}
-                  {renderField('comment_status')}
-                </div>
-              </div>
-              
-              {/* Submit button */}
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </span>
-                  ) : (
-                    isEditing ? 'Update Product' : 'Add Product'
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+            </div>
+            
+            {/* Submit button */}
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUploading}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-[#c0a483] focus:outline-none disabled:bg-gray-400"
+              >
+                {isUploading ? 'Saving...' : (isEditing ? 'Update Product' : 'Add Product')}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

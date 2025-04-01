@@ -148,7 +148,7 @@ const DashboardHome = () => {
     { 
       title: 'Total Products', 
       value: totalProducts.toString(), 
-      icon: <ShoppingBagIcon className="h-6 w-6 text-indigo-600" />, 
+      icon: <ShoppingBagIcon className="h-6 w-6 text-[#c0a483]" />, 
       link: '/admin/dashboard/products',
       linkText: 'Manage Products'
     },
@@ -169,7 +169,7 @@ const DashboardHome = () => {
     { 
       title: 'Special Products', 
       value: specialProducts.toString(), 
-      icon: <TagIcon className="h-6 w-6 text-purple-600" />, 
+      icon: <TagIcon className="h-6 w-6 text-[#c0a483]" />, 
       link: '/admin/dashboard/products',
       linkText: 'View Special Products'
     }
@@ -232,8 +232,8 @@ const DashboardHome = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold text-gray-800 font-serif">Dashboard Overview</h1>
+        <p className="text-gray-600 mt-1 font-serif">
           View and manage your store's inventory, orders, and notifications.
         </p>
       </div>
@@ -246,7 +246,7 @@ const DashboardHome = () => {
               <ExclamationCircleIcon className="h-5 w-5" />
           </div>
           <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 font-serif">{error}</p>
             </div>
           </div>
         </div>
@@ -257,30 +257,30 @@ const DashboardHome = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-indigo-100 p-3 rounded-lg">
+              <div className="bg-black/5 p-3 rounded-lg">
                 {stat.icon}
               </div>
               <div className="text-right">
-                <Link to={stat.link} className="text-xs text-indigo-600 hover:underline">
+                <Link to={stat.link} className="text-xs text-[#c0a483] hover:underline font-serif">
                   {stat.linkText}
                 </Link>
               </div>
             </div>
             <div className="text-2xl font-bold text-gray-800">{stat.value}</div>
-            <div className="mt-2 text-sm text-gray-600">{stat.title}</div>
+            <div className="mt-2 text-sm text-gray-600 font-serif">{stat.title}</div>
           </div>
         ))}
       </div>
-      
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Stock Distribution Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Inventory Status</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Inventory Status</h2>
           {loading ? (
             <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500">Loading chart data...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
+              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
@@ -311,7 +311,7 @@ const DashboardHome = () => {
                       className="w-3 h-3 rounded-full mr-2"
                       style={{ backgroundColor: entry.color }}
                     ></div>
-                    <span className="text-xs text-gray-600">{entry.name}: {entry.value}</span>
+                    <span className="text-xs text-gray-600 font-serif">{entry.name}: {entry.value}</span>
                   </div>
                 ))}
               </div>
@@ -321,11 +321,11 @@ const DashboardHome = () => {
         
         {/* Category Distribution Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Product Categories</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Top Product Categories</h2>
           {loading ? (
             <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500">Loading chart data...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
+              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -337,7 +337,7 @@ const DashboardHome = () => {
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" fill="#4f46e5" name="Products" />
+                <Bar dataKey="value" fill="#c0a483" name="Products" />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -348,11 +348,11 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 gap-6">
         {/* Notification Activity Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Notification Activity (Last 7 Days)</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Notification Activity (Last 7 Days)</h2>
           {loading ? (
             <div className="py-4 text-center h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="ml-2 text-sm text-gray-500">Loading chart data...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
+              <p className="ml-2 text-sm text-gray-500 font-serif">Loading chart data...</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -365,7 +365,7 @@ const DashboardHome = () => {
                 <YAxis />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Line type="monotone" dataKey="orders" stroke="#4f46e5" name="Order Notifications" />
+                <Line type="monotone" dataKey="orders" stroke="#c0a483" name="Order Notifications" />
                 <Line type="monotone" dataKey="stock" stroke="#ef4444" name="Stock Alerts" />
                 <Line type="monotone" dataKey="other" stroke="#6b7280" name="Other Notifications" />
               </LineChart>
@@ -378,29 +378,29 @@ const DashboardHome = () => {
         {/* Low Stock Products */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Low Stock Products</h2>
-            <Link to="/admin/dashboard/products" className="text-sm text-indigo-600 hover:underline">
+            <h2 className="text-lg font-semibold text-gray-800 font-serif">Low Stock Products</h2>
+            <Link to="/admin/dashboard/products" className="text-sm text-[#c0a483] hover:underline font-serif">
               View All
             </Link>
           </div>
           
           {loading ? (
             <div className="py-4 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Loading products...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#c0a483] mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-500 font-serif">Loading products...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
                       Product
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
                       Stock
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-serif">
                       Status
                     </th>
                   </tr>
@@ -425,18 +425,18 @@ const DashboardHome = () => {
                                 />
                               </div>
                             )}
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 font-serif">
                               {product.name || product.post_title}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                          <div className="text-sm text-gray-900 font-serif">
                             {product.stock || product.stock_quantity}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 font-serif">
                             Low Stock
                           </span>
                         </td>
@@ -447,7 +447,7 @@ const DashboardHome = () => {
                     return stock > 0 && stock < 5;
                   }).length === 0 && (
                     <tr>
-                      <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500 font-serif">
                         No low stock products found
                       </td>
                     </tr>
@@ -461,8 +461,8 @@ const DashboardHome = () => {
         {/* Recent Notifications */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Notifications</h2>
-            <Link to="/admin/dashboard/notifications" className="text-sm text-indigo-600 hover:underline">
+            <h2 className="text-lg font-semibold text-gray-800 font-serif">Recent Notifications</h2>
+            <Link to="/admin/dashboard/notifications" className="text-sm text-[#c0a483] hover:underline font-serif">
               View All
             </Link>
           </div>
@@ -480,19 +480,19 @@ const DashboardHome = () => {
                   </div>
                   <div className="ml-3 flex-1">
                     <div className="flex justify-between">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 font-serif">
                         {notification.title}
                       </p>
                       {!notification.read && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#c0a483] text-white font-serif">
                           New
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-gray-600 truncate">
+                    <p className="mt-1 text-sm text-gray-600 truncate font-serif">
                       {notification.message}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 font-serif">
                       {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -500,7 +500,7 @@ const DashboardHome = () => {
               </Link>
             ))}
             {notifications.length === 0 && (
-              <div className="text-center py-4 text-sm text-gray-500">
+              <div className="text-center py-4 text-sm text-gray-500 font-serif">
                 No notifications found
               </div>
             )}
@@ -512,39 +512,39 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Notification Summary */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Notification Summary</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Notification Summary</h2>
           
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <BellIcon className="h-5 w-5 text-indigo-600 mr-2" />
-                <span className="text-sm text-gray-600">All Notifications</span>
+                <BellIcon className="h-5 w-5 text-[#c0a483] mr-2" />
+                <span className="text-sm text-gray-600 font-serif">All Notifications</span>
               </div>
-              <span className="font-medium">{notifications.length}</span>
+              <span className="font-medium font-serif">{notifications.length}</span>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <BellIcon className="h-5 w-5 text-blue-600 mr-2" />
-                <span className="text-sm text-gray-600">Unread</span>
+                <BellIcon className="h-5 w-5 text-[#c0a483] mr-2" />
+                <span className="text-sm text-gray-600 font-serif">Unread</span>
               </div>
-              <span className="font-medium">{unreadNotifications}</span>
+              <span className="font-medium font-serif">{unreadNotifications}</span>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <ExclamationCircleIcon className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-sm text-gray-600">Stock Alerts</span>
+                <span className="text-sm text-gray-600 font-serif">Stock Alerts</span>
               </div>
-              <span className="font-medium">{stockNotifications}</span>
+              <span className="font-medium font-serif">{stockNotifications}</span>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <ShoppingBagIcon className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-sm text-gray-600">Order Updates</span>
+                <ShoppingBagIcon className="h-5 w-5 text-[#c0a483] mr-2" />
+                <span className="text-sm text-gray-600 font-serif">Order Updates</span>
               </div>
-              <span className="font-medium">
+              <span className="font-medium font-serif">
                 {notifications.filter(n => 
                   n.type === 'order_placed' || n.type === 'order_status_change'
                 ).length}
@@ -555,7 +555,7 @@ const DashboardHome = () => {
           <div className="mt-6 text-center">
             <Link 
               to="/admin/dashboard/notifications" 
-              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+              className="text-[#c0a483] hover:text-black text-sm font-medium font-serif uppercase"
             >
               View All Notifications
             </Link>
@@ -564,86 +564,86 @@ const DashboardHome = () => {
         
         {/* Quick Actions */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">Quick Actions</h2>
           
           <div className="grid grid-cols-2 gap-4">
             <Link
               to="/admin/dashboard/products"
               className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
-              <ShoppingBagIcon className="h-8 w-8 text-indigo-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Add Product</span>
+              <ShoppingBagIcon className="h-8 w-8 text-[#c0a483] mb-2" />
+              <span className="text-sm font-medium text-gray-700 font-serif">Add Product</span>
             </Link>
             
             <Link
               to="/admin/dashboard/orders"
               className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
-              <ShoppingBagIcon className="h-8 w-8 text-green-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">View Orders</span>
+              <ShoppingBagIcon className="h-8 w-8 text-[#c0a483] mb-2" />
+              <span className="text-sm font-medium text-gray-700 font-serif">View Orders</span>
             </Link>
             
             <Link
               to="/admin/dashboard/discount-codes"
               className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
-              <TicketIcon className="h-8 w-8 text-purple-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Discount Codes</span>
+              <TicketIcon className="h-8 w-8 text-[#c0a483] mb-2" />
+              <span className="text-sm font-medium text-gray-700 font-serif">Discount Codes</span>
             </Link>
             
             <Link
               to="/admin/dashboard/excel"
               className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
-              <CurrencyDollarIcon className="h-8 w-8 text-yellow-600 mb-2" />
-              <span className="text-sm font-medium text-gray-700">Excel Manager</span>
+              <CurrencyDollarIcon className="h-8 w-8 text-[#c0a483] mb-2" />
+              <span className="text-sm font-medium text-gray-700 font-serif">Excel Manager</span>
             </Link>
           </div>
         </div>
         
         {/* System Status */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">System Status</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 font-serif">System Status</h2>
           
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Products Database</div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <div className="text-sm text-gray-600 font-serif">Products Database</div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Orders System</div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <div className="text-sm text-gray-600 font-serif">Orders System</div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Stock Monitoring</div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <div className="text-sm text-gray-600 font-serif">Stock Monitoring</div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Notification System</div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <div className="text-sm text-gray-600 font-serif">Notification System</div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">Excel Integration</div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <div className="text-sm text-gray-600 font-serif">Excel Integration</div>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 font-serif">
                 Active
               </span>
             </div>
           </div>
           
           <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="text-sm text-gray-600 flex justify-between">
+            <div className="text-sm text-gray-600 flex justify-between font-serif">
               <span>Last System Update:</span>
               <span className="font-medium">{new Date().toLocaleDateString()}</span>
             </div>

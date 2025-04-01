@@ -23,6 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import AdminNotificationBell from '../../components/admin/AdminNotificationBell';
+import '../../styles/admin.css';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -51,10 +52,10 @@ const AdminDashboard = () => {
   // Show loading if authentication is being checked
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="admin-page flex h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#c0a483] mx-auto"></div>
+          <p className="mt-3 text-gray-600 font-serif">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -63,13 +64,13 @@ const AdminDashboard = () => {
   // Show access denied if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="admin-page flex h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <p className="text-red-600 font-bold text-xl">Access Denied</p>
-          <p className="mt-2 text-gray-600">Please log in to access the admin dashboard.</p>
+          <p className="text-red-600 font-bold text-xl font-serif">Access Denied</p>
+          <p className="mt-2 text-gray-600 font-serif">Please log in to access the admin dashboard.</p>
           <button 
             onClick={() => navigate('/admin')}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md"
+            className="mt-4 px-4 py-2 bg-black text-white font-serif hover:bg-[#c0a483] transition-colors"
           >
             Go to Login
           </button>
@@ -79,20 +80,20 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="admin-page flex h-screen bg-white">
       {/* Sidebar */}
-      <div className="w-64 bg-[#212529] text-white flex flex-col">
+      <div className="w-64 bg-black text-white flex flex-col sidebar">
         {/* Logo */}
-        <div className="p-5 border-b border-gray-700">
+        <div className="p-5 border-b border-gray-800">
           <Link to="/admin/dashboard" className="flex items-center space-x-2">
-            <span className="font-bold text-xl text-amber-500">🥃 Lorkon</span>
+            <span className="font-bold text-xl text-[#c0a483] font-serif">🥃 Liquor Online</span>
           </Link>
         </div>
         
         {/* Menu Categories */}
         <div className="flex-1 overflow-y-auto">
           <div className="py-4">
-            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">GENERAL</p>
+            <p className="sidebar-heading px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 font-serif">GENERAL</p>
             <NavItem 
               to="/admin/dashboard" 
               icon={<ChartBarIcon className="h-5 w-5" />} 
@@ -120,7 +121,7 @@ const AdminDashboard = () => {
           </div>
           
           <div className="py-4">
-            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">TAXONOMY</p>
+            <p className="sidebar-heading px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 font-serif">TAXONOMY</p>
             <NavItem 
               to="/admin/dashboard/categories" 
               icon={<TagIcon className="h-5 w-5" />} 
@@ -147,14 +148,14 @@ const AdminDashboard = () => {
             />
             <NavItem 
               to="/admin/dashboard/types" 
-              icon={<TagIcon className="h-5 w-5 text-blue-400" />} 
+              icon={<TagIcon className="h-5 w-5" />} 
               label="Types" 
               active={activeMenu === 'types'} 
             />
           </div>
           
           <div className="py-4">
-            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">INVENTORY</p>
+            <p className="sidebar-heading px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 font-serif">INVENTORY</p>
             <NavItem 
               to="/admin/dashboard/category" 
               icon={<TagIcon className="h-5 w-5" />} 
@@ -182,7 +183,7 @@ const AdminDashboard = () => {
           </div>
           
           <div className="py-4">
-            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">USERS</p>
+            <p className="sidebar-heading px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 font-serif">USERS</p>
             <NavItem 
               to="/admin/dashboard/profile" 
               icon={<UserIcon className="h-5 w-5" />} 
@@ -198,7 +199,7 @@ const AdminDashboard = () => {
           </div>
           
           <div className="py-4">
-            <p className="px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">OTHER</p>
+            <p className="sidebar-heading px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 font-serif">OTHER</p>
             <NavItem 
               to="/admin/dashboard/notifications" 
               icon={<BellIcon className="h-5 w-5" />} 
@@ -221,10 +222,10 @@ const AdminDashboard = () => {
         </div>
         
         {/* Logout */}
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-gray-800">
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-2 text-gray-300 hover:text-white w-full px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+            className="flex items-center space-x-2 text-white w-full px-4 py-2 rounded-md hover:bg-[#c0a483] transition-colors font-serif uppercase"
           >
             <ArrowLeftOnRectangleIcon className="h-5 w-5" />
             <span>Logout</span>
@@ -235,12 +236,12 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white shadow-sm z-10">
+        <header className="bg-white shadow-sm z-10 border-b border-gray-200">
           <div className="px-6 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-800">Welcome, {admin?.username || 'Admin'}!</h1>
+            <h1 className="text-2xl font-serif text-gray-800">Welcome, {admin?.username || 'Admin'}!</h1>
             <div className="flex items-center space-x-4">
               <AdminNotificationBell />
-              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
+              <div className="h-8 w-8 rounded-full bg-[#c0a483] flex items-center justify-center text-white font-semibold">
                 {admin?.username?.charAt(0).toUpperCase() || 'A'}
               </div>
             </div>
@@ -248,7 +249,7 @@ const AdminDashboard = () => {
         </header>
         
         {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+        <main className="flex-1 overflow-y-auto bg-white p-6">
           <Outlet />
         </main>
       </div>
@@ -261,10 +262,10 @@ const NavItem = ({ to, icon, label, active }) => {
   return (
     <Link
       to={to}
-      className={`flex items-center space-x-2 px-5 py-3 transition-colors ${
+      className={`sidebar-link flex items-center space-x-2 px-5 py-3 transition-colors font-serif uppercase ${
         active 
-          ? 'bg-gray-700 text-white' 
-          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          ? 'bg-[#c0a483] text-white active' 
+          : 'text-gray-300 hover:bg-[#c0a483] hover:text-white'
       }`}
     >
       {icon}
