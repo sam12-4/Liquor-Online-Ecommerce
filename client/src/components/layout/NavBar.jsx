@@ -732,9 +732,9 @@ const NavBar = () => {
                           <Link to="/notifications" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
                             My Notifications
                           </Link>
-                          <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                          {/* <Link to="/my-orders" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
                             My Orders
-                          </Link>
+                          </Link> */}
                           <button 
                             onClick={handleLogout}
                             className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
