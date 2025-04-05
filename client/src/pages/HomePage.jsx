@@ -479,49 +479,51 @@ const HomePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {recommendedProducts.filter(product => product.isHot).slice(0, 4).map((product, index) => (
               <AnimatedSection key={product.id} delay={index * 0.1} className="h-full">
-                <div className="bg-white text-center relative">
-                  {/* Image container with border */}
-                  <div className="border border-gray-100 p-4 mb-4 relative">
-                    <div className="absolute top-4 right-4 bg-[#c0a483] text-white text-xs px-3 py-1 font-medium">
-                      Hot
-          </div>
-                    <div className="h-64 flex items-center justify-center relative">
-                      {/* Watermark background */}
-                      <div className="absolute inset-0 z-0 flex flex-col justify-center overflow-hidden opacity-10 w-full h-full">
-                        {[...Array(10)].map((_, row) => (
-                          <div key={row} className="flex whitespace-nowrap w-full">
-                            {[...Array(10)].map((_, col) => (
-                              <span
-                                key={`${row}-${col}`}
-                                className="text-transparent font-bold whitespace-nowrap py-4"
-                                style={{
-                                  fontSize: '2rem',
-                                  WebkitTextStroke: '1px #c0a483',
-                                  textStroke: '1px #c0a483',
-                                  letterSpacing: '0.01em'
-                                }}
-                              >
-                                LIQUOR ONLINE&nbsp;
-                              </span>
-                            ))}
-        </div>
-                        ))}
-              </div>
-                      {/* Product image */}
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="max-h-full max-w-full object-contain relative z-10"
-                      />
-              </div>
-              </div>
-                  {/* Text outside of border */}
-                  <div className="pt-2">
-                    <h3 className="text-xs md:text-sm uppercase font-bold tracking-wider mb-2 text-center">{product.name}</h3>
-                    <p className="text-[#c0a483] font-bold text-lg">${product.price.toLocaleString()}</p>
+                <Link to={`/product/${product.id || product.sku}`} className="block h-full">
+                  <div className="bg-white text-center relative">
+                    {/* Image container with border */}
+                    <div className="border border-gray-100 p-4 mb-4 relative">
+                      <div className="absolute top-4 right-4 bg-[#c0a483] text-white text-xs px-3 py-1 font-medium">
+                        Hot
+                      </div>
+                      <div className="h-64 flex items-center justify-center relative">
+                        {/* Watermark background */}
+                        <div className="absolute inset-0 z-0 flex flex-col justify-center overflow-hidden opacity-10 w-full h-full">
+                          {[...Array(10)].map((_, row) => (
+                            <div key={row} className="flex whitespace-nowrap w-full">
+                              {[...Array(10)].map((_, col) => (
+                                <span
+                                  key={`${row}-${col}`}
+                                  className="text-transparent font-bold whitespace-nowrap py-4"
+                                  style={{
+                                    fontSize: '2rem',
+                                    WebkitTextStroke: '1px #c0a483',
+                                    textStroke: '1px #c0a483',
+                                    letterSpacing: '0.01em'
+                                  }}
+                                >
+                                  LIQUOR ONLINE&nbsp;
+                                </span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Product image */}
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="max-h-full max-w-full object-contain relative z-10"
+                        />
+                      </div>
+                    </div>
+                    {/* Text outside of border */}
+                    <div className="pt-2">
+                      <h3 className="text-xs md:text-sm uppercase font-bold tracking-wider mb-2 text-center">{product.name}</h3>
+                      <p className="text-[#c0a483] font-bold text-lg">${product.price.toLocaleString()}</p>
+                    </div>
                   </div>
-              </div>
-            </AnimatedSection>
+                </Link>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -623,49 +625,51 @@ const HomePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {trendingProducts.filter(product => product.isTrending).slice(0, 4).map((product, index) => (
               <AnimatedSection key={product.id} delay={index * 0.1} className="h-full">
-                <div className="bg-white text-center relative">
-                  {/* Image container with border */}
-                  <div className="border border-gray-100 p-4 mb-4 relative">
-                    <div className="absolute top-4 right-4 bg-[#c0a483] text-white text-xs px-3 py-1 font-medium">
-                      Trending
+                <Link to={`/product/${product.id || product.sku}`} className="block h-full">
+                  <div className="bg-white text-center relative">
+                    {/* Image container with border */}
+                    <div className="border border-gray-100 p-4 mb-4 relative">
+                      <div className="absolute top-4 right-4 bg-[#c0a483] text-white text-xs px-3 py-1 font-medium">
+                        Trending
+                      </div>
+                      <div className="h-64 flex items-center justify-center relative">
+                        {/* Watermark background */}
+                        <div className="absolute inset-0 z-0 flex flex-col justify-center overflow-hidden opacity-10 w-full h-full">
+                          {[...Array(10)].map((_, row) => (
+                            <div key={row} className="flex whitespace-nowrap w-full">
+                              {[...Array(10)].map((_, col) => (
+                                <span
+                                  key={`${row}-${col}`}
+                                  className="text-transparent font-bold whitespace-nowrap py-4"
+                                  style={{
+                                    fontSize: '2rem',
+                                    WebkitTextStroke: '1px #c0a483',
+                                    textStroke: '1px #c0a483',
+                                    letterSpacing: '0.01em'
+                                  }}
+                                >
+                                  LIQUOR ONLINE&nbsp;
+                                </span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Product image */}
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="max-h-full max-w-full object-contain relative z-10"
+                        />
+                      </div>
                     </div>
-                    <div className="h-64 flex items-center justify-center relative">
-                      {/* Watermark background */}
-                      <div className="absolute inset-0 z-0 flex flex-col justify-center overflow-hidden opacity-10 w-full h-full">
-                        {[...Array(10)].map((_, row) => (
-                          <div key={row} className="flex whitespace-nowrap w-full">
-                            {[...Array(10)].map((_, col) => (
-                              <span
-                                key={`${row}-${col}`}
-                                className="text-transparent font-bold whitespace-nowrap py-4"
-                                style={{
-                                  fontSize: '2rem',
-                                  WebkitTextStroke: '1px #c0a483',
-                                  textStroke: '1px #c0a483',
-                                  letterSpacing: '0.01em'
-                                }}
-                              >
-                                LIQUOR ONLINE&nbsp;
-                              </span>
-                            ))}
-        </div>
-                        ))}
-              </div>
-                      {/* Product image */}
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="max-h-full max-w-full object-contain relative z-10"
-                      />
-              </div>
-              </div>
-                  {/* Text outside of border */}
-                  <div className="pt-2">
-                    <h3 className="text-xs md:text-sm uppercase font-bold tracking-wider mb-2 text-center">{product.name}</h3>
-                    <p className="text-[#c0a483] font-bold text-lg">${product.price.toLocaleString()}</p>
+                    {/* Text outside of border */}
+                    <div className="pt-2">
+                      <h3 className="text-xs md:text-sm uppercase font-bold tracking-wider mb-2 text-center">{product.name}</h3>
+                      <p className="text-[#c0a483] font-bold text-lg">${product.price.toLocaleString()}</p>
+                    </div>
                   </div>
-              </div>
-            </AnimatedSection>
+                </Link>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -739,8 +743,8 @@ const HomePage = () => {
                       className="w-12 h-12 md:w-16 md:h-16 rounded-full mb-2 md:mb-3 border-2 border-[#c0a483]"
                     />
                     <h4 className="font-serif text-gray-800 uppercase font-bold text-sm md:text-base">Lyndsey Kletchco</h4>
+                  </div>
                 </div>
-              </div>
               </SwiperSlide>
 
               <SwiperSlide>
